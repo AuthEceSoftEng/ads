@@ -6,14 +6,15 @@
 ##' @exportClass FileManipulator
 FileManipulator <- setRefClass(Class = "FileManipulator",
                                  fields = list(
-			             directories_ = "character"
+			             directories_ = "list"
 
                                  ),
                                  methods = list(
                                    loadDataset = function(name, ...) {
                                      'Loads file specified by name in repository with datasets into a data.frame'
                                      # get directory of datasets
-                                     workspace_dir <- directories_["Workspace"]
+                                     workspace_dir <- directories_$Workspace
+                                     str(workspace_dir)
                                      # create path to file
                                      dataset_path <- paste(workspace_dir, "datasets_repo", name, sep = "/" )
                                      # read file into data.frame
@@ -26,7 +27,7 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    loadOrderedDictionary = function(...) {
                                      'Loads dictionary of words indicating ordered features.'
                                      # get ADS Workspace
-                                     workspace_dir <- directories_["Workspace"]
+                                     workspace_dir <- directories_$Workspace
                                      # create path to file
                                      file_path <- file.path(workspace_dir, "heuristics_repo/ordered_dictionary.csv")
                                      # load file
@@ -56,8 +57,12 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      dev.off()
 
                                    },
+                                   setDirectories = function(directories, ...) {
+                                    directories_ <<- directories                                  
+                                   },
 
                                    initialize=function(...) {
+                                     directories_ <<- list( Workspace = "yo")
 
                                      callSuper(...)
                                      .self

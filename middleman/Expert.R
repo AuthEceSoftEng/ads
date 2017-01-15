@@ -31,9 +31,9 @@ Expert <- setRefClass(Class = "Expert",
                                  },
                                  processTask = function(task, ...) {
                                    'Checks fields of task to extract information about appropriate preprocessing techniques'
-                                   processed_task <- list()
-                                   if(!is.null(task$model)) {
-                                     if(task$model == "NN") {
+                                   processed_task <<- list()
+                                   if(!is.null(task$algorithm)) {
+                                     if(task$algorithm == "NN") {
                                        processed_task$certain_range <<- 1
                                        range = c(0,1)
                                      } 
@@ -83,15 +83,18 @@ Expert <- setRefClass(Class = "Expert",
                                    # choose if data should be compressed
                                    if(IsCompressRequired(dataset)) {
                                      dataset_numeric <- data_compressor_$performPCA(dataset)
-                                     str(dataset_numeric) 
+                                     #str(dataset_numeric) 
                                      dataset_cat <- data_compressor_$performMDA(dataset)
                                      #str(dataset_cat)
-                                     dataset <- merge(dataset_numeric, dataset_cat)
+                                     dataset <- cbind(dataset_numeric, dataset_cat)
+                                     dataset <-  dataset[,unique(colnames(dataset))]
                                    }
+                                   str(dataset)
                                    # choose feature transformation
                                    if(IsLogTransformRequired(dataset)) {
-                                     feature_engineer_$applyLogTransform(dataset)
+                                     dataset <- feature_engineer_$applyLogTransform(dataset)
                                    }
+                                   #str(dataset)
                                    return(dataset)
                                  },
                                  initialize = function(...) {

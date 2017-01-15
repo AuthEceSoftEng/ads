@@ -66,7 +66,7 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          'Set class attribute of private dataset.'
                          class_attribute_ <<- class_attribute
                        },
-                       trainModel = function(training_dataset) {
+                       trainModel = function(training_dataset, parameters, project_dir) {
                          'Train a classification model.'
                           cat("*** GenericClassifier: no effect ***")
                           return(NULL)

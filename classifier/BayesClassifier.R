@@ -1,42 +1,38 @@
-##' A class responsible for training a k-nearest neighbor classifier
+##' A class responsible for training a bayesian classifier
 ##' 
 ##' @include GenericClassifier.R 
 ##' @import methods
 ##' @export
 BayesClassifier <- setRefClass(Class = "BayesClassifier",
                              fields = list(
-                               fL_ = "numeric",
-                               usekernel_ = "logical",
-                               adjust_ = "numeric"
+                               
                              ),
                              contains = "GenericClassifier"
 )
 
 BayesClassifier$methods(
-  trainModel = function(training_dataset) {
+  trainModel = function(training_dataset, parameters, project_dir) {
     'Train a classification model.'
-    optParameters <- expand.grid( fL = c(fL_),
-                                  usekernel = c(usekernel_),
-                                  adjust = c(adjust_)
+    optParameters <- expand.grid( fL = c(parameters$fL),
+                                  usekernel = c(parameters$usekernel),
+                                  adjust = c(parameters$adjust)
                                   )
     
     #train model
     trained_model <- train(Class ~ ., data = training_dataset,
-                           method = "nb", #knn with parameters k(number of neighbors)
+                           method = "nb", 
                            tuneGrid = optParameters,
                            trControl=trainControl(method="none")
     )
     #save model 
-    #  project_dir <- server_$getProjectDir()
-    project_dir <- "/home/elena/R_ws/ADS/ADS_workspace/project_temp/model/model_files/"
-    model_file <- paste(project_dir, "bayes_model.rds", sep = "")
+    model_dir <- file.path(project_dir, "model/model_files")
+    model_file <- file.path(model_dir, "bayes_model.rds")
+    print(model_file)
     saveRDS(trained_model, model_file)
     return(trained_model)
   },
   initialize=function(...) {
-    fL_ <<- 1
-    usekernel_ <<- TRUE
-    adjust_ <<- 1
+    
     callSuper(...)
   }
 )

@@ -5,15 +5,15 @@
 ##' @export
 KnnClassifier <- setRefClass(Class = "KnnClassifier",
                              fields = list(
-                               k_ = "numeric"
+
                              ),
                              contains = "GenericClassifier"
 )
 
 KnnClassifier$methods(
-  trainModel = function(training_dataset) {
+  trainModel = function(training_dataset, parameters, project_dir) {
     'Train a classification model.'
-    optParameters <- expand.grid( k = c(k_)
+    optParameters <- expand.grid( k = c(parameters$k)
                                   )
     
     #train model
@@ -23,14 +23,14 @@ KnnClassifier$methods(
                            trControl=trainControl(method="none")
     )
     #save model 
-    #  project_dir <- server_$getProjectDir()
-    project_dir <- "/home/elena/R_ws/ADS/ADS_workspace/project_temp/model/model_files/"
-    model_file <- paste(project_dir, "knn_model.rds", sep = "")
+    model_dir <- file.path(project_dir, "model/model_files")
+    model_file <- file.path(model_dir, "knn_model.rds")
+    print(model_file)
     saveRDS(trained_model, model_file)
     return(trained_model)
   },
   initialize=function(...) {
-    k_ <<- 2
+
     callSuper(...)
   }
 )

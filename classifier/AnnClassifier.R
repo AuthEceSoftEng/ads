@@ -5,17 +5,15 @@
 ##' @export
 AnnClassifier <- setRefClass(Class = "AnnClassifier",
                                  fields = list(
-                                   size_ = "numeric",
-                                   decay_ = "numeric"
                                  ),
                                    contains = "GenericClassifier"
                              )
 
 AnnClassifier$methods(
-    trainModel = function(training_dataset) {
+    trainModel = function(training_dataset, parameters, project_dir) {
       'Train a classification model.'
-      optParameters <- expand.grid( size = c(size_) ,
-                                    decay = c(decay_)
+      optParameters <- expand.grid( size = c(parameters$size) ,
+                                    decay = c(parameters$decay)
       )
       
       #train model
@@ -25,15 +23,14 @@ AnnClassifier$methods(
                              trControl=trainControl(method="none")
       )
       #save model 
-      #  project_dir <- server_$getProjectDir()
-      project_dir <- "/home/elena/R_ws/ADS/ADS_workspace/project_temp/model/model_files/"
-      model_file <- paste(project_dir, "ann_model.rds", sep = "")
+      #  project_dir <- server_$getProjectDir()      
+      model_dir <- file.path(project_dir, "model/model_files")
+      model_file <- file.path(model_dir, "ann_model.rds")
+      print(model_file)
       saveRDS(trained_model, model_file)
       return(trained_model)
     },
     initialize=function(...) {
-      size_ <<- 0
-      decay_ <<- 0
       callSuper(...)
     }
 )
