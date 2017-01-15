@@ -1,0 +1,51 @@
+##' Α class responsible for performing PCA and MDA analysis on a dataset.
+##'
+##' DataCompressor uses package caret to find PCA features which maintain the desired variance.
+##' @import methods caret
+##' @export
+DataCompressor <- setRefClass(Class = "DataCompressor",
+                           fields = list(
+
+                           ),
+                           methods = list(
+                             performPCA = function(dataset, variance = 0.95,  ...) {
+                               'Finds PCA features with desired variance. Takes into account only numeric features.'
+                               library(caret)
+                             
+                               # remove categorical attributes
+                               variables <- names(dataset[sapply(dataset,class) == "factor"])
+                               num_dataset <-  as.data.frame(dataset[, !(names(dataset) %in% variables)])
+                               # remove Class
+                               num_dataset$Class <- NULL
+                               
+                               # apply PCA
+                               pre.total_data <-predict.preProcess(num_dataset, 
+                                                                   method=c("BoxCox"),newdata=num_dataset)
+                               
+                               PCA <- prcomp(pre.total_data,
+                                             center = TRUE,
+                                             scale = TRUE) 
+                               attributes_for_desired_variance <- (which(cumsum((PCA$sdev)^2) / sum(PCA$sdev^2)>variance)[1])
+                               transformed_dataset <- as.data.frame(PCA$x[, 1:attributes_for_desired_variance])
+                               # reappend Class
+                               transformed_dataset$Class <- dataset$Class
+                               return(transformed_dataset)
+                             },
+                             performMDA = function(dataset,variance = 0.95, ...) {
+                               library(FactoMineR)
+                               variables <- names(dataset[sapply(dataset,class) == "factor"])
+                               cat_dataset <-  as.data.frame(dataset[, (names(dataset) %in% variables)])
+                               cat_dataset$Class <- NULL
+                               mca <- FactoMineR::MCA(cat_dataset, graph=FALSE)
+                               attributes_for_desired_variance <- min(which((mca$eig$`cumulative percentage of variance`>variance)==TRUE))
+                               transformed_dataset <- data.frame(mca$ind$coord)[, 1:attributes_for_desired_variance]
+                               transformed_dataset$Class <- dataset$Class
+                               return(transformed_dataset)
+                               
+                             },
+                             initialize = function(...) {
+                               callSuper(...)
+                               .self
+                             }
+                           )
+)
