@@ -12,7 +12,7 @@ Expert <- setRefClass(Class = "Expert",
                                   inap_remover_ = "InapRemover",
                                   normalizer_= "Normalizer",
                                   data_compressor_= "DataCompressor",
-                                  processed_task = "list"
+                                  processed_task_ = "list"
                                ),
                                methods = list(
                                  formQuery = function(request, ...) {
@@ -31,24 +31,24 @@ Expert <- setRefClass(Class = "Expert",
                                  },
                                  processTask = function(task, ...) {
                                    'Checks fields of task to extract information about appropriate preprocessing techniques'
-                                   processed_task <<- list()
+                                   processed_task_ <<- list()
                                    if(!is.null(task$algorithm)) {
                                      if(task$algorithm == "NN") {
-                                       processed_task$certain_range <<- 1
+                                       processed_task_$certain_range <<- 1
                                        range = c(0,1)
                                      } 
                                    }
                                    if(!is.null(task$application)) {
                                      if(task$application %in% c("image")) {
-                                     processed_task$certain_range <<- 1
+                                       processed_task_$certain_range <<- 1
                                      range = c(0,255)
                                      }
                                    }
-                                  return(processed_task)
+                                  
                                  },
                                  chooseNormalizationMethod = function(...) {
                                    'Chooses between zscore and minmax normalization based on processed_task'
-                                   if(is.null(processed_task$certain_range)) {
+                                   if(is.null(processed_task_$certain_range)) {
                                      return("zscore")
                                    }else {
                                      return("minmax")
@@ -68,7 +68,7 @@ Expert <- setRefClass(Class = "Expert",
                                  choosePreprocessing = function(dataset, task, ...) {
                                    'Makes decisions about preprocessing and perform it.'
                                    # process task to extract info about preprocessing
-                                   processed_task <<- processTask(task)
+                                   processTask(task)
                                    # remove inappropriate values(NAs and infinites)
                                    dataset <- inap_remover_$removeUnknown(dataset, unknown_action = list(act="delete", rep=0))
                                    dataset <- inap_remover_$removeInfinites(dataset, inf_action = list(act="delete"))
@@ -78,7 +78,7 @@ Expert <- setRefClass(Class = "Expert",
                                      dataset <- normalizer_$zscoreNormalize(dataset)
                                    } 
                                    else if(method == "minmax") {
-                                     dataset <- normalizer_$minMaxNormalize(dataset, range = processed_task$min_max_range)
+                                     dataset <- normalizer_$minMaxNormalize(dataset, range = processed_task_$min_max_range)
                                    }
                                    # choose if data should be compressed
                                    if(IsCompressRequired(dataset)) {
@@ -89,7 +89,7 @@ Expert <- setRefClass(Class = "Expert",
                                      dataset <- cbind(dataset_numeric, dataset_cat)
                                      dataset <-  dataset[,unique(colnames(dataset))]
                                    }
-                                   str(dataset)
+                                   #str(dataset)
                                    # choose feature transformation
                                    if(IsLogTransformRequired(dataset)) {
                                      dataset <- feature_engineer_$applyLogTransform(dataset)
@@ -102,7 +102,7 @@ Expert <- setRefClass(Class = "Expert",
                                    inap_remover_ <<- InapRemover$new()
                                    normalizer_ <<- Normalizer$new()
                                    data_compressor_ <<- DataCompressor$new()
-                                   processed_tak <<- list(model = NULL , application = NULL, certain_range = NULL, pca_percentage = NULL)
+                                   processed_task_ <<- list(model = NULL , application = NULL, certain_range = NULL, pca_percentage = NULL)
                                    callSuper(...)
                                    .self
                                  }

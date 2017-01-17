@@ -34,6 +34,20 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      dic <- read.csv(file_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
                                      return(dic)
                                    },
+                                   saveModel = function(...) {
+                                     'Saves a trained machine learning model and returns important info'
+                                     model_info <- list()
+                                     return(model_info)
+                                   },
+                                   saveEnsemble = function(included_models, predictions, ...) {
+                                     'Saves built ensemble'
+                                     # save all models
+                                     models_info <- list()
+                                     for(model in included_models) {
+                                       models_info[[model$method]] <- saveModel(model)
+                                     }
+                                     # save txt with info about ensemble(included models, tuning process, ...)
+                                   },
                                    saveDataset = function(dataset, directory, ...){
                                      'Saves a data.frame into a .csv file.'
                                      # create path to file

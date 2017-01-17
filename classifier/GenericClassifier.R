@@ -11,7 +11,9 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                        num_models_ = "numeric",
                        class_attribute_ = "data.frame",
                        accuracy_ = "numeric",
-                       seed_ = "numeric"
+                       seed_ = "numeric",
+                       project_dir_ = "character",
+                       model_name_ = "character"
                      ),
                      methods = list(
                        getNumModels = function() {
@@ -22,11 +24,12 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                        getModels = function() {
                          'Returns the models in directory model/model_files.'
                          # project_dir <- server_$getProjectDir()
-                         project_dir <- "/home/elena/R_ws/ADS/ADS_workspace/project_temp"
                          model_files_directory <- "model/model_files"
-                         model_files_directory <- file.path(project_dir, model_files_directory)
+                         
+                         model_files_directory <- file.path(project_dir_, model_files_directory)
                          model_files <- list.files(model_files_directory, recursive = TRUE)
-                         model_files <- paste(model_files_directory, model_files, sep = "/")
+                         model_files <- file.path(model_files_directory, model_files)
+                         
                          models <- lapply(model_files, readRDS)
                          return(models)
                        },
@@ -45,17 +48,24 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                        predictClassifier = function(model_to_pred, dataset) {
                          'Predicts using a classification model.'
                          model <- model_to_pred
-                         predictions <- stats::predict(model, dataset, type = "prob")
+                         predictions <- predict(model, dataset, type = "prob")
                          return(predictions)
                        },
-                       calculateAccuracy = function(model_to_acc) { 
+                       calculateAccuracy = function(model_to_acc, test_dataset) { 
                          'Calculate accuracy of classification model, provided as .rds entity.'
+                         #str(test_dataset)
+                         #str(model_to_acc)
                          model_to_pred <- model_to_acc
-                         probabilities <- predictClassifier(model_to_pred, dataset = dataset_)
-                         predictions <- as.numeric(((probabilities))>0.5)
-                         class_attribute <- as.numeric(class_attribute_[,1])
-                         class_attribute[class_attribute==2] <-0
-                         accuracy <- 1 - sum(abs(class_attribute - predictions)) /length(class_attribute)
+                         class_attribute <- test_dataset$Class
+                         test_dataset$Class <- NULL
+                         probabilities <- predictClassifier(model_to_pred, dataset = test_dataset)
+                         indexes <- which((probabilities$Negative>0.5))
+                         predictions <- seq(1, nrow(probabilities))
+                         predictions[indexes] <- 0
+                         predictions[-indexes] <- 1
+                         predictions <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
+                         cm <- confusionMatrix(predictions, class_attribute)
+                         accuracy <- as.numeric(cm$overall['Accuracy'])
                          return(accuracy)
                        },
                        setDataset = function(dataset) {
@@ -70,6 +80,10 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          'Train a classification model.'
                           cat("*** GenericClassifier: no effect ***")
                           return(NULL)
+                       },
+                       getModelName = function(...) {
+                         'Returns name of algorithm used in model'
+                         return(model_name_)
                        },
                        initialize=function(...) {
                          seed_ <<- 1

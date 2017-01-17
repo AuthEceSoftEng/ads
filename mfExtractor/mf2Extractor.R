@@ -50,7 +50,7 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                 if(ncol(dataset_cat)!=0) {
                                   hasCat$hasCategorical <- TRUE
                                   statFeatsCat <- mf1_extractor_$calculateStatisticalCategorical(dataset =dataset_cat)
-                                  statFeatsCat2 <- mf2_extractor$calculate2MetaFeatures(dataset=statFeatsCat)
+                                  statFeatsCat2 <- calculate2MetaFeatures(dataset=statFeatsCat)
                                   if(length(result)!=0) result<- cbind(result, statFeatsCat2)
                                   else result<- statFeatsCat2
                                 }
