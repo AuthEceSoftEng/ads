@@ -45,25 +45,26 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          'Returns the  the class vector.'
                          return(class_attribute_)
                        },
-                       predictClassifier = function(model_to_pred, dataset) {
+                       predictClassifier = function(model_to_pred, dataset, type = "raw") {
                          'Predicts using a classification model.'
                          model <- model_to_pred
-                         predictions <- predict(model, dataset, type = "prob")
+                         predictions <- predict(model, dataset, type = type)
                          return(predictions)
                        },
-                       calculateAccuracy = function(model_to_acc, test_dataset) { 
+                       calculateAccuracy = function(model_to_acc, test_dataset, class_attribute) { 
                          'Calculate accuracy of classification model, provided as .rds entity.'
                          #str(test_dataset)
                          #str(model_to_acc)
                          model_to_pred <- model_to_acc
-                         class_attribute <- test_dataset$Class
                          test_dataset$Class <- NULL
-                         probabilities <- predictClassifier(model_to_pred, dataset = test_dataset)
+                         probabilities <- predictClassifier(model_to_pred, dataset = test_dataset, type = "prob")
                          indexes <- which((probabilities$Negative>0.5))
                          predictions <- seq(1, nrow(probabilities))
                          predictions[indexes] <- 0
                          predictions[-indexes] <- 1
                          predictions <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
+                         str(predictions)
+                         str(class_attribute)
                          cm <- confusionMatrix(predictions, class_attribute)
                          accuracy <- as.numeric(cm$overall['Accuracy'])
                          return(accuracy)

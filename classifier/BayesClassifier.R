@@ -12,6 +12,7 @@ BayesClassifier <- setRefClass(Class = "BayesClassifier",
 BayesClassifier$methods(
   trainModel = function(training_dataset, parameters, project_dir) {
     'Train a classification model.'
+    library(e1071)
     project_dir_ <<- project_dir
     optParameters <- expand.grid( fL = c(parameters$fL),
                                   usekernel = c(parameters$usekernel),
@@ -19,6 +20,7 @@ BayesClassifier$methods(
                                   )
     
     #train model
+    str(training_dataset)
     trained_model <- train(Class ~ ., data = training_dataset,
                            method = "nb", 
                            tuneGrid = optParameters,

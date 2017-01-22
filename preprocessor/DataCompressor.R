@@ -29,18 +29,29 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                transformed_dataset <- as.data.frame(PCA$x[, 1:attributes_for_desired_variance])
                                # reappend Class
                                transformed_dataset$Class <- dataset$Class
-                               return(transformed_dataset)
+                               return(as.data.frame(transformed_dataset))
                              },
-                             performMDA = function(dataset,variance = 0.95, ...) {
+                             performMDA = function(dataset,variance = 95, ...) {
                                library(FactoMineR)
                                variables <- names(dataset[sapply(dataset,class) == "factor"])
-                               cat_dataset <-  as.data.frame(dataset[, (names(dataset) %in% variables)])
-                               cat_dataset$Class <- NULL
-                               mca <- FactoMineR::MCA(cat_dataset, graph=FALSE)
-                               attributes_for_desired_variance <- min(which((mca$eig$`cumulative percentage of variance`>variance)==TRUE))
-                               transformed_dataset <- data.frame(mca$ind$coord)[, 1:attributes_for_desired_variance]
-                               transformed_dataset$Class <- dataset$Class
-                               return(transformed_dataset)
+                               cat_dataset <-  dataset[, (names(dataset) %in% variables)]
+                               transformed_dataset <- cat_dataset
+                               # str(cat_dataset)
+                               # cat_dataset$Class <- NULL
+                               # str(cat_dataset)
+                               # mca <- FactoMineR::MCA(cat_dataset[1:100,], ncp = ncol(cat_dataset), graph=FALSE)
+                               # library(MASS)
+                               # #mca <- MASS::mca(cat_dataset, nf = ncol(cat_dataset))
+                               # #str(mca$rs)
+                               # cat("finished mcas")
+                               #  str(mca$eig)
+                               #  str(mca$eig$`cumulative percentage of variance`)
+                               # attributes_for_desired_variance <- min(which((mca$eig$`cumulative percentage of variance`>variance)==TRUE))
+                               # cat(attributes_for_desired_variance )
+                               # str(data.frame(mca$ind$coord))
+                               # transformed_dataset <- data.frame(mca$ind$coord)[, 1:attributes_for_desired_variance]
+                               # transformed_dataset$Class <- dataset$Class
+                               return(as.data.frame(transformed_dataset))
                                
                              },
                              initialize = function(...) {

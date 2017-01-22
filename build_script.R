@@ -1,5 +1,40 @@
 #setwd("automl-software")
-# add required for libraries
+
+# Loading needed packages
+if(!require(caret))
+{
+  print("You are missing the package 'caret', we will now try to install it...")
+  install.packages("caret")
+  library(coin)
+}
+
+if(!require(coin))
+{
+  print("You are missing the package 'coin', we will now try to install it...")
+  install.packages("coin")
+  library(coin)
+}
+
+if(!require(multcomp))
+{
+  print("You are missing the package 'multcomp', we will now try to install it...")
+  install.packages("multcomp")
+  library(multcomp)
+}
+
+if(!require(colorspace))
+{
+  print("You are missing the package 'colorspace', we will now try to install it...")
+  install.packages("colorspace")
+  library(colorspace)
+}
+
+if(!require(pROC))
+{
+  print("You are missing the package 'colorspace', we will now try to install it...")
+  install.packages("colorspace")
+  library(pROC)
+}
 source("classifier/GenericClassifier.R")
 source("classifier/AnnClassifier.R")
 source("classifier/BayesClassifier.R")
@@ -15,6 +50,8 @@ source("preprocessor/FeatureEngineer.R")
 source("preprocessor/InapRemover.R")
 source("preprocessor/Normalizer.R")
 source("preprocessor/DataCompressor.R")
+source("evaluator/PerformanceEvaluator.R")
+source("evaluator/HypothesisTester.R")
 source("middleman/Expert.R")
 source("preprocessor/DataPrepare.R")
 source("middleman/Server.R")
