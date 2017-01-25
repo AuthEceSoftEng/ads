@@ -14,7 +14,9 @@ Expert <- setRefClass(Class = "Expert",
                                   data_compressor_= "DataCompressor",
                                   processed_task_ = "list",
                                   preprocessing_procedure_ = "list",
-                                  performance_evaluator_ = "PerformanceEvaluator"
+                                  performance_evaluator_ = "PerformanceEvaluator",
+                                  hypothesis_tester_ = "HypothesisTester",
+                                  conf_level_ = "numeric"
                                ),
                                methods = list(
                                  formQuery = function(request, ...) {
@@ -30,6 +32,11 @@ Expert <- setRefClass(Class = "Expert",
                                    # set up connection with database
                                    # get response
                                    return(response)
+                                 },
+                                 choosePerformanceMetric = function(model_name, dataset, ...) {
+                                   'Chooses appropriate performance metric according to heuristics'
+                                   performance_metric <- "auc"
+                                   return(performance_metric)
                                  },
                                  processTask = function(task, ...) {
                                    'Checks fields of task to extract information about appropriate preprocessing techniques'
@@ -50,9 +57,7 @@ Expert <- setRefClass(Class = "Expert",
                                    if(TRUE) {
                                      processed_task_$metrics <<- c("auc")
                                    }
-                                   
-                                  
-                                 },
+                                },
                                  chooseNormalizationMethod = function(...) {
                                    'Chooses between zscore and minmax normalization based on processed_task'
                                    if(is.null(processed_task_$certain_range)) {
@@ -70,7 +75,8 @@ Expert <- setRefClass(Class = "Expert",
                                    'Decides if PCA and/or MDA compression is required'
                                    # to be implemented
                                    # check if feature is skewed or have a too wide range
-                                   return(FALSE)
+                                   indexes <- NULL
+                                   return(indexes)
                                  },
                                  choosePreprocessing = function(dataset, task, final = FALSE, ...) {
                                    'Makes decisions about preprocessing and performs it.'
@@ -98,8 +104,9 @@ Expert <- setRefClass(Class = "Expert",
                                      dataset <-  dataset[,unique(colnames(dataset))]
                                    }
                                    # choose feature transformation
-                                   if(IsLogTransformRequired(dataset)) {
-                                     dataset <- feature_engineer_$applyLogTransform(dataset)
+                                   indexes <- IsLogTransformRequired(dataset)
+                                   if(!is.null(indexes)) {
+                                     dataset <- feature_engineer_$applyLogTransform(dataset, indexes)
                                    }
                                    # store preprocessing procedure in list (for later application on test_dataset)
                                    preprocessing_procedure_ <<- list()
@@ -108,31 +115,104 @@ Expert <- setRefClass(Class = "Expert",
                                  applyPreprocessing = function(dataset, task, ...) {
                                    'Applies preprocessing to dataset based on info in preprocessing_procedure_'
                                    # retrieve info from preprocessing_procedure_ and apply it
-                                   #preprocessed_dataset <- dataset
+                                   # preprocessed_dataset <- dataset
                                    # WARNING: temporary for testing, task should not be an argument
                                    preprocessed_dataset <- choosePreprocessing(dataset, task)
                                    return(preprocessed_dataset)
                                  },
-                                 getPerformance = function(predictions, actual_class, predicted_probs, ...) {
+                                 getPerformance = function(predictions, actual_class, predicted_probs, performance_metric, ...) {
                                    'Returns performance of model'
                                    # choose appropriate performance metric based on heuristics
                                    performance <- c()
                                    # --- call Performance Evaluator ---
                                    # get metrics extracted from confusion matrix
-                                   performance_evaluator_$setPredictions(predictions = predictions)
+                                   str(predictions)
+                                   
+                                   if(!is.null(predictions)) performance_evaluator_$setPredictions(predictions = predictions)
                                    performance_evaluator_$setActualClass(actual_class = actual_class)
-                                   if("auc" %in% processed_task_$metrics) {
+                                   if(performance_metric == "auc" ) {
+                                     str("calculating auc")
                                      performance <- performance_evaluator_$calculateAUC(predicted_probs = predicted_probs)
                                    } else {
-                                     performance <- performance_evaluator_$calculateConfusionMatrixMetrics(selected_metrics = processed_task_$metrics)
+                                     performance <- performance_evaluator_$calculateConfusionMatrixMetrics(selected_metric = performance_metric)
                                    }
                                      return(performance)
                                  },
-                                 getProcessedTask = function(...) {
-                                   return(processed_task_)
-                                 }, 
-                                 compareTechniques = function(results_a, results_b, ...) {
-                                   'Returns comparisons on techniques(machine learning or optimization algorithms) based on hypothesis testing'
+                                 getHypothesisTester = function(...) {
+                                  'Returns object normalizer_'
+                                  return(hypothesis_tester_)
+                                 },
+                                 getPerformanceEvaluator = function(...) {
+                                  'Returns object normalizer_'
+                                  return(performance_evaluator_)
+                                 },
+                                 getDataCompressor = function(...) {
+                                   'Returns object data_compressor_'
+                                   return(data_compressor_)
+                                 },
+                                 getNormalizer = function(...) {
+                                   'Returns object normalizer_'
+                                   return(normalizer_)
+                                 },
+                                 getInapRemover = function(...) {
+                                  'Returns object normalizer_'
+                                  return(inap_remover_)
+                                 },
+                                getFeatureEngineer = function(...) {
+                                  'Returns object normalizer_'
+                                  return(feature_engineer_)
+                                },
+                                getHypothesisTester = function(...) {
+                                  'Returns object normalizer_'
+                                  return(hypothesis_tester_)
+                                },
+                                getProcessedTask = function(...) {
+                                  return(processed_task_)
+                                }, 
+                                 tTestApplicable = function(...) {
+                                   'Checks if t-test is applicable for compating two machine learning models. Conditions are that datasets are enough and performance of each model
+                                   follows a normal distribution'
+                                   return(FALSE)
+                                 },
+                                 anovaApplicable = function(...) {
+                                   'Checks if ANOVA is applicable for compating multiple machine learning models. Conditions are that performance of each model
+                                   follows a normal distribution and variance of performances is equal for each model.'
+                                   return(FALSE)
+                                 },
+                                 compareModels = function(results, task, ...) {
+                                   'Returns comparisons on machine learning models based on hypothesis testing and accordin to task'
+                                   # decide upon kind of test
+                                   # auc is default metric
+                                   if(is.null(task$compare$metric)) task$compare$metric <- "auc"
+                                   # extract performance metric from results
+                                   results <- lapply(results, function(x) as.data.frame(x[, task$compare$metric]))
+                                   if(length(results) == 2) {
+                                     # if conditions are met apply Student's t-test
+                                     if(tTestApplicable()) {
+                                       test_result <- hypothesis_tester_$rankTest(results, methods = c("ttest"), conf.level = conf_level_ )
+                                     }
+                                     else {
+                                       test_result <- hypothesis_tester_$rankTest(results, methods = c("wilcoxon"), conf.level = conf_level_)
+                                     }
+                                   } 
+                                   else if(length(results)>2){
+                                     # if conditions are met apply ANOVA
+                                     if(anovaApplicable()) {
+                                       test_result <- hypothesis_tester_$rankTest(results, methods = c("ANOVA"), conf.level= conf_level_)
+                                     }
+                                     else {
+                                       test_result <- hypothesis_tester_$rankTest(results, methods = c("friedman"), conf.level = conf_level_)
+                                     }
+                                   }
+                                   else {
+                                     cat("Error: You need more than one models to compare.")
+                                     test_result <- NULL
+                                   }
+                                   str(test_result)
+                                   str(test_result$test_result)
+                                   if(test_result$test_result$p.value > conf_level_)
+                                   # test_result is a list containing all information extracted from test
+                                   return(test_result)
                                  },
                                  initialize = function(...) {
                                    feature_engineer_ <<- FeatureEngineer$new()
@@ -142,6 +222,8 @@ Expert <- setRefClass(Class = "Expert",
                                    processed_task_ <<- list(model = NULL , application = NULL, certain_range = NULL, pca_percentage = NULL)
                                    preprocessing_procedure_ <<- list()
                                    performance_evaluator_ <<- PerformanceEvaluator$new()
+                                   hypothesis_tester_ <<- HypothesisTester$new()
+                                   conf_level_ <<- 0.95
                                    callSuper(...)
                                    .self
                                  }

@@ -20,7 +20,8 @@ make_option( c("-w", "--workspace"), type = "character",
              default = workspace_dir, help = "name of workspace directory",
              metavar = "character"),
 make_option( c("-t", "--train"), action = "store_true", dest = "train"),
-make_option( c("-e", "--experiment"), action = "store_false", dest = "train")
+make_option( c("-e", "--experiment"), action = "store_false", dest = "train"),
+make_option( c("-c", "--compare"), action = "store_true", dest = "compare", default = FALSE)
 );
 
 opt_parser = OptionParser(option_list=option_list);

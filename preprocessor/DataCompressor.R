@@ -5,8 +5,8 @@
 ##' @export
 DataCompressor <- setRefClass(Class = "DataCompressor",
                            fields = list(
-
-                           ),
+                             info_ = "list"
+                         ),
                            methods = list(
                              performPCA = function(dataset, variance = 0.95,  ...) {
                                'Finds PCA features with desired variance. Takes into account only numeric features.'
@@ -29,6 +29,9 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                transformed_dataset <- as.data.frame(PCA$x[, 1:attributes_for_desired_variance])
                                # reappend Class
                                transformed_dataset$Class <- dataset$Class
+                               # update data_compress_info_ with info about PCA
+                               pca_info <- list(pertained_variance = variance, number_of_features = attributes_for_desired_variance)
+                               info_$PCA <<- pca_info
                                return(as.data.frame(transformed_dataset))
                              },
                              performMDA = function(dataset,variance = 95, ...) {
@@ -54,7 +57,12 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                return(as.data.frame(transformed_dataset))
                                
                              },
+                             getInfo = function(...) {
+                               'Return information about data compression'
+                               return(info_)
+                             },
                              initialize = function(...) {
+                               info_ <<- list()
                                callSuper(...)
                                .self
                              }

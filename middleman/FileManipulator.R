@@ -6,7 +6,7 @@
 ##' @exportClass FileManipulator
 FileManipulator <- setRefClass(Class = "FileManipulator",
                                  fields = list(
-			             directories_ = "list"
+                                   directories_ = "list"
 
                                  ),
                                  methods = list(
@@ -24,6 +24,46 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      # set server's information
                                      return(dataset)
                                    },
+                                   loadResults = function(task, ...) {
+                                     'Loads results of algorithms'
+                                     if(task$compare$techniques == "models") {
+                                       project_dir <- directories_$Project
+                                       results_path <- paste(project_dir, "model/specifications/results", sep = "/")
+                                       cat(results_path)
+                                     }
+                                     else if (task$techniques == "algorithms")
+                                     {
+                                       # if implemented, results of different optimization algorithms should be stored in specific directory
+                                       #project_dir <- directories_$Project
+                                       #results_path <- paste(project_dir, "model/specifications/results", sep = "/")
+                                       #cat(results_path)
+                                     }
+                                     # get files in directory 'project_name'/model/specifications/results
+                                     results_files <- paste(results_path, list.files(path = results_path),sep = "/")
+                                     # load all files and return data.frames
+                                     total_results <- list()
+                                     str(results_files)
+                                     for(file in results_files) {
+                                       cat(file)
+                                       results <- read.csv(file, header = TRUE, sep=",", stringsAsFactors=FALSE)
+                                       file_name <- deparse(substitute(file))
+                                       total_results[[file_name]] <- results
+                                       str(total_results)
+                                     }
+                                     names(total_results) <- as.vector(results_files)
+                                     return(total_results)
+                                     
+                                   },
+                                   clearModels = function(...) {
+                                     'Clears models in directory model/model_files of current project'
+                                     project_dir <- directories_$Project
+                                     cat(project_dir)
+                                     # create path to file
+                                     models_path <- paste(project_dir, "model/model_files", sep = "/" )
+                                     models_to_delete <- as.vector(paste(models_path, list.files(models_path), sep = "/"))
+                                     str(models_to_delete)
+                                     unlink(models_to_delete)
+                                   },
                                    loadOrderedDictionary = function(...) {
                                      'Loads dictionary of words indicating ordered features.'
                                      # get ADS Workspace
@@ -34,10 +74,13 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      dic <- read.csv(file_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
                                      return(dic)
                                    },
-                                   saveModel = function(...) {
-                                     'Saves a trained machine learning model and returns important info'
-                                     model_info <- list()
-                                     return(model_info)
+                                   saveModel = function(model, model_file, ...) {
+                                     'Saves a trained machine learning model'
+                                     project_dir <- directories_$Project
+                                     # create path to file
+                                     model_path <- paste(project_dir, "model/model_files", model_file, sep = "/")
+                                     cat(model_path)
+                                     saveRDS(model, model_path)
                                    },
                                    saveEnsemble = function(included_models, predictions, ...) {
                                      'Saves built ensemble'
@@ -54,13 +97,42 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      # save dataset
                                    },
                                    saveXml = function(name, procedure) {
-                                     'Saves in "name.xml" the procedure(newXMLNode) of the experiment.'
+                                     'Saves in "name.xml" the procedure list, after translating it to an XmlNode.'
                                      # get path to save to  from server
                                      # define path+file
                                      # save procedure
-                                     saveXML(procedure)
+                                     file_name <- paste(directories_$Project,"/", name, ".xml", sep ="")
+                                     cat(file_name)
+                                     suppressWarnings(xml <- XML::xmlTree(name))
+                                     xml$addTag(as.character(substitute(procedure)), close = FALSE)
+                                     xml_tree <- convertListToXmlTree(xml, procedure, i=1)
+                                     cat(saveXML(xml_tree$value()))
+                                     saveXML(xml_tree$value(), file = file_name)
                                    },
-                                   savePng = function(name, plot) {
+                                   convertListToXmlTree = function(xml, procedure, i, ...) {
+                                     'Converts list procedure to an Xml tree'
+                                     if(length(procedure) >0) {
+                                         if(is.list(procedure[[i]])) {
+                                           proc_temp <- procedure[[i]]
+                                           for(k in seq(1, length(proc_temp))) {
+                                             xml$addTag(names(proc_temp[k]), close = FALSE)
+                                               for(j in seq(1, length(proc_temp[[k]]))) {
+                                                 convertListToXmlTree(xml, procedure = proc_temp[[k]], i=j)
+                                               }
+                                               xml$closeTag()
+                                            }
+                                          } else {
+                                             xml$addTag(names(procedure[i]), procedure[[i]])
+                                        }
+                                     }
+                                     return(xml) 
+                                   },
+                                   saveRData = function(data, file, ...) {
+                                     'Saves data in .RData formata'
+                                     file_name <- paste(directories_$Project,"/", file, ".RData", sep ="")
+                                     save(data, file = file_name)
+                                   },
+                                   savePng = function(name, plot, ...) {
                                      'Saves a plot to a "name".png.'
                                      # get path to save to from server
                                      # define image path
@@ -69,7 +141,11 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      # plot
                                      # close png device
                                      dev.off()
-
+                                   },
+                                   generateReport = function(data, ...) {
+                                     'Generates report of experiment with all useful information produced in file experiment.pdf'
+                                     # assign list's elements to latex template
+                                     cat("Generating report")
                                    },
                                    setDirectories = function(directories, ...) {
                                     directories_ <<- directories                                  

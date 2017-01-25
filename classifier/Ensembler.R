@@ -12,21 +12,32 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    perc_initial_  = "numeric",
                                    M_ = "numeric",
                                    p_ = "numeric",
-                                   accuracy_ = "numeric",
+                                   performance_ = "numeric",
                                    classes_ = "factor",
                                    test_dataset_ = "data.frame",
-                                   class_attribute_ = "factor"
+                                   class_attribute_ = "factor",
+                                   performance_metric_ = "character",
+                                   expert_ = "Expert",
+                                   info_ = "list"
                                  ),
                                  methods = list(
                                    evaluateModelContribution = function(models_to_eval){
-                                   'Evaluate contribution of a model to the ensemble as improvement to current accuracy'
-                                     sampled_accuracies <- list()
+                                   'Evaluate contribution of a model to the ensemble as improvement to current performance'
+                                     sampled_performances <- list()
                                      for ( i in c(1:length(models_to_eval))) {
                                        model_to_acc <- models_to_eval[[i]]
-                                       accuracy <- classifier_$calculateAccuracy(model_to_acc, test_dataset = test_dataset_, class_attribute = class_attribute_)
-                                       sampled_accuracies[[i]] <- accuracy
+                                       # train model to get binary predictions
+                                       predictions <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
+                                       predicted_probs <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
+                                       str(predictions)
+                                       str(predicted_probs)
+                                       # train model to get probability predictions
+                                       str(performance_metric_)
+                                       performance <- expert_$getPerformance(as.factor(predictions), actual_class = class_attribute_, predicted_probs= predicted_probs, performance_metric = performance_metric_)
+                                       str(performance)
+                                       sampled_performances[[i]] <- performance
                                    }
-                                   contributions <- unlist(sampled_accuracies) - accuracy_
+                                   contributions <- unlist(sampled_performances) - performance_
                                    cat("evaluated model contribution")
                                    return(contributions)
                                  },
@@ -50,16 +61,17 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                         cat(length(included_models_))
                                       }
                                    },
-                                   getAccuracy = function(...){
+                                   getPerformance = function(...){
                                      'Returns current accuracy of ensemble'
-                                     return(accuracy_)
+                                     return(performance_)
                                    },
                                    getIncludedModels = function(...){
                                      'Return models included in ensemble'
                                      return(included_models_)
                                    },
-                                   ensemble = function(classifier, test_dataset,  ...){
+                                   ensemble = function(classifier, test_dataset, performance_metric,  ...){
                                      'Generates an ensemble of classification models'
+                                     performance_metric_ <<- performance_metric
                                      test_dataset_  <<- test_dataset
                                      classifier_ <<- classifier
                                      class_attribute_ <<- test_dataset_$Class
@@ -76,6 +88,9 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                       total_models <- classifier_$getModels() 
                                       cat("total models are")
                                       cat(length(total_models))
+                                      # update info of ensemble
+                                      # ATTENTION: CONNECT p_ WITH SAMPLE 
+                                      
                                       #  for each bootstrap sample
                                      for ( i in c(1:M_)) {
                                        i
@@ -96,6 +111,8 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                        
                                      }
                                       cat(length(included_models_))
+                                      info_$parameters <<- list( initial_ensemble_size = M_, probability_of_inclusion = p_, size = length(included_models_))
+                                      info_$tuning <<- list(size = nrow(test_dataset))
                                       return(included_models_)
                                      
                                    },
@@ -152,14 +169,26 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      # update models included in ensemble (I don't mind including the same mode again)
                                      #str(model$method)
                                      included_models_[[num_models_]] <<- model
-                                     indexes <- which((probabilities_$Negative > 0.5))
-                                     predictions <- seq(1, nrow(probabilities_))
-                                     predictions[indexes] <- 0
-                                     predictions[-indexes] <- 1
-                                     predictions <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
-                                     cm <- confusionMatrix(predictions, class_attribute_)
-                                     accuracy_ <<- as.numeric(cm$overall['Accuracy'])
+                                     # indexes <- which((probabilities_$Negative > 0.5))
+                                     # predictions <- seq(1, nrow(probabilities_))
+                                     # predictions[indexes] <- 0
+                                     # predictions[-indexes] <- 1
+                                     # predictions <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
+                                     # cm <- confusionMatrix(predictions, class_attribute_)
+                                     # accuracy_ <<- as.numeric(cm$overall['Accuracy'])
+                                     performance_ <<- expert_$getPerformance(predictions = NULL, actual_class = class_attribute_, predicted_probs = probabilities_, performance_metric = performance_metric_)
+                                     str(performance_)
+                                     cat("found performance")
                                      # update ensemble's accuracy
+                                   },
+                                   getInfo = function(...) {
+                                     'Returns information about ensemble'
+                                     return(info_)
+                                   },
+                                   savePlots = function(...) {
+                                     'Saves plots describing ensembler'
+                                     # create plot with performance at each ensemble update
+                                     # save plots
                                    },
                                    compressEnsemble = function(){
                                      'Converts an ensemble to a deep neural network (size and time compression)'
@@ -168,12 +197,14 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      # !!!initialize probabilities_ as data.frames with labels known from classifier_!!!
                                      test_dataset_ <<- data.frame()
                                      num_models_ <<- 0
-                                     accuracy_ <<- 0
                                      perc_initial_ <<- 0.5
                                      M_ <<- 5
                                      p_ <<- 0.5
                                      classifier_ <<- GenericClassifier$new()
+                                     expert_ <<- Expert$new()
                                      probabilities_ <<- data.frame(Negative=c(), Positive =c())
+                                     performance_ <<- 0
+                                     info_ <<- list()
                                      callSuper(...)
                                      .self
                                    }

@@ -22,6 +22,7 @@ InputParser <- setRefClass(Class = "InputParser",
                                                           workspace_dir = options$workspace)
                                    if(options$train) server_$trainScientist()
                                    else server_$performExperiment(dataset_name = dataset_file_)
+                                   if(options$compare) server_$compareAlgorithms()
                                  },
                               initialize=function(...) {
                                    server_ <<- Server$new()

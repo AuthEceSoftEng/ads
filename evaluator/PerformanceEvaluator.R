@@ -10,10 +10,11 @@
 PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                       fields = list(
                         predictions_ = "factor",
-                        actual_class_ = "factor"
+                        actual_class_ = "factor",
+                        info_ = "list"
                         ),
                       methods = list(
-                        calculateConfusionMatrixMetrics = function(selected_metrics, ...) {
+                        calculateConfusionMatrixMetrics = function(selected_metric, ...) {
                           'Returns a list of metrics (defined by the vector selected_metrics) derived from confusion matrix.'
                           # calculate confusion matrix
                           cm <- caret::confusionMatrix(predictions_, actual_class_)
@@ -34,17 +35,20 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                           # return list of metrics
                           conf_metrics <- list(Accuracy = accuracy, Recall = recall,
                                                Precision = precision, Fmeasure = Fmeasure, Matthew_coeff = Matthew_coeff)
-                          return(conf_metrics[[selected_metrics]])
+                          for(i in 1:length(selected_metrics)) {
+                            info_[[selected_metric[i]]] <<-  conf_metrics[[selected_metric[[i]]]]
+                          }
+                          return(conf_metrics[[selected_metric]])
                         },
                         calculateAUC = function(predicted_probs, ...) {
                           'Returns area under ROC-curve' 
                           # probabilities extracted from trained model are needed
                           str(predicted_probs)
-                          str(actual_class_)
                           roc_curve <- pROC::roc(predictor = predicted_probs$Positive,
                                          response = actual_class_
                                          )
-                          return(roc_curve$auc)
+                          info_$auc <<-  as.numeric(roc_curve$auc) 
+                          return(as.numeric(roc_curve$auc))
                           #Area under the curve: 0.8731
                         },
                         calculateARI = function(...) {
@@ -58,9 +62,14 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                         setActualClass = function(actual_class, ...) {
                           actual_class_ <<- actual_class
                         },
+                        getInfo = function(...) {
+                          'Return information about evaluation of performance'
+                          return(info_)
+                        },
                         initialize = function(...) {
                            predictions_ <<- factor(0)
                            actual_class_ <<- factor(0)
+                           info_ <<- list()
                            callSuper(...)
                           .self
                         }

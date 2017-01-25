@@ -11,7 +11,8 @@
 ##' @export HypothesisTester
 HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                     fields = list(
-                                      results_ = "list"
+                                      results_ = "list",
+                                      info_ = "list"
                                     ),
                                     methods = list(
                                       performanceProfiler = function(performances, ...) {
@@ -43,53 +44,70 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                           ggtitle('Performance profile plot') + 
                                           labs(x="t",y="P") 
                                       },
-                                      rankTest = function(methods = c("friedman", "chi-squared",
+                                      rankTest = function(results, methods = c("friedman", "chi-squared",
                                                                        "fisher", "cochran-mante-haenszel",
-                                                                       "wilcoxon", "mcnemar"), data, ... ) {
+                                                                       "wilcoxon", "mcnemar"), conf.level, ... ) {
                                         'Returns tests included in methods. Available tests include
                                         hypothesis testing techniques on 1-way, 2-way and 3-way contigency tables'
+                                        cat(conf.level)
+                                        cat("printed conf \n")
                                         # arguments for external functions are going to be passed through ...
                                         test_results <- list()
                                         # 1-way
                                         if("chi-squared" %in% methods) {
                                           # x is number of successes and n is number of trials 
-                                          chi_test <- stats::prop.test(x, n)
-                                          test_results[[chi-squared]] <- chi_test
+                                          chi_test <- stats::prop.test(x, n,  conf.level = conf.level)
+                                          test_results[["test_result"]] <- chi_test
                                         }
                                         # 2-way
                                         if("friedman" %in% methods) {
-                                          # data must be in the form of a dataframe and formula usually Class ~.
-                                          friedman_test <- stats::friedman.test(formula, data, correct = FALSE)
-                                          test_results[[friedman]] <- friedman_test
+                                          # convert list of 3 dataframes to table with a column for each model
+                                          num_files <- nrow(results[[1]])
+                                          #friedman_results <- matrix(nrow = num_files, ncol = length(results))
+                                          friedman_vector <- c()
+                                          for(i in seq(1, length(results))) {
+                                            friedman_vector <- c(friedman_vector, results[[i]])
+                                            
+                                          }
+                                          friedman_vector <- unlist(friedman_vector)
+                                          friedman_results <- matrix(friedman_vector, nrow = num_files, byrow = FALSE, dimnames =  list(1:num_files, names(results)))
+                                          friedman_test <-friedman.test(friedman_results, conf.level = conf.level)
+                                          test_results[["test_result"]] <- friedman_test
                                           # post-hoc analysis to find pairs of significantly differing algorithms
-                                          friedman_post_hoc <- friedman.test.with.post.hoc(formula, data)
-                                          test_results[[friedman_post_hoc]] <- friedman_post_hoc
-                                          # replacing F-chisquared with F-statistic according to Iman and Davenport
-                                          
-                                          friedman_test_alt <- alternativeFriedman(original_friedman = friedman_test, N = nrow(data), k = (ncol(data)-1))
-                                          test_results[[friedman_test_alt]] <- friedman_test_alt
+                                          # friedman_post_hoc <- friedman.test.with.post.hoc(formula, data)
+                                          # test_results[[friedman_post_hoc]] <- friedman_post_hoc
+                                          # # replacing F-chisquared with F-statistic according to Iman and Davenport
+                                          # friedman_test_alt <- alternativeFriedman(original_friedman = friedman_test, N = nrow(data), k = (ncol(data)-1))
+                                          #test_results[[friedman_test_alt]] <- friedman_test_alt
                                         }
                                         if("fisher" %in% methods) {
                                           # x and y are row vectors with same length
-                                          fisher_test <- stats::fisher.test(x, y)
-                                          test_results[[fisher]] <- fisher_test
+
+                                          fisher_test <- stats::fisher.test(x, y,  conf.level = conf.level)
+                                          test_results[["test_result"]] <- fisher_test
                                         }
                                         if("wilcoxon" %in% methods) {
                                           # same with man-whitney u test
                                           # x and y are row vectors with same length
-                                          wilcoxon_test <- stats::wilcox.test(x, y)
-                                          test_results[[wilcoxon]] <- wilcoxon_test
+                                          x <- unlist(results[[1]])
+                                          y <- unlist(results[[2]])
+                                          wilcoxon_test <- stats::wilcox.test(x, y,  conf.level = conf.level)
+                                          test_results[["test_result"]] <- wilcoxon_test
                                         }
                                         if("cochran-mante-haenszel" %in% methods) {
                                           # x is a 3-way contigency array  
-                                          mantelhaen_list <- stats::mantelhaen.test(x, correct = FALSE)
-                                          test_results[[wilcoxon]] <- wilcoxon_test
+                                          mantelhaen_list <- stats::mantelhaen.test(x,   conf.level = conf.level, correct = FALSE)
+                                          test_results[["cochran-mante-haenszel"]] <- wilcoxon_test
                                         }
                                         if("mcnemar" %in% methods) {
                                           # x is a 3-way contigency array  
-                                          mcnemar_list <- stats::mcnemar.test(x, correct = FALSE)
-                                          test_results[[mcnemar]] <- mcnemar_test
+                                          mcnemar_list <- stats::mcnemar.test(x,  conf.level = conf.level, correct = FALSE)
+                                          test_results[["test_result"]] <- mcnemar_test
                                         }
+                                        for (i in 1:length(methods)) {
+                                          info_[[paste("method_",i, sep = "" )]] <<- list( test_name = methods[i])
+                                        }
+                                        return(test_results)
                                       },
                                       alternativeFriedman = function(original_friedman, N, k, thres = 0.0001, alpha_level = 0.05) {
                                         'Replace friedman chi-squared statistic with f-statistic' 
@@ -224,8 +242,13 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                           }
                                         }
                                       },
+                                      getInfo = function(...) {
+                                        'Return information about hypothesis testing'
+                                        return(info_)
+                                      },
                                       initialize = function(...) {
                                         results_ <<- list()
+                                        info_ <<- list()
                                         callSuper(...)
                                         .self
                                       }

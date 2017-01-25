@@ -65,6 +65,14 @@ FeatureVisualizer <- setRefClass(Class = "FeatureVisualizer",
                                   # get directory from server
                                   # save
                                 },
+                                savePlots = function(...) {
+                                  'Saves all plots produced during experiment and deemed informational'
+                                  # choose informational plots
+                                  # plot them
+                                },
+                                assessPlots = function(...) {
+                                  'Assess if produced plots are informational'
+                                },
                                  initialize = function(...) {
                                    callSuper(...)
                                    .self
