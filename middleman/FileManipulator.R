@@ -74,12 +74,17 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      dic <- read.csv(file_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
                                      return(dic)
                                    },
-                                   saveModel = function(model, model_file, ...) {
+                                   saveModel = function(model, model_name, ...) {
                                      'Saves a trained machine learning model'
+                                     model_file <- model_name
+                                     parameters <- model$bestTune
+                                     for(j in seq(1, length(parameters))) {
+                                       model_file <- paste(model_file,names(parameters[j]), parameters[[j]] , sep = "_")
+                                     }
+                                     model_file <- paste(model_file, "model.rds", sep = "_")
                                      project_dir <- directories_$Project
                                      # create path to file
                                      model_path <- paste(project_dir, "model/model_files", model_file, sep = "/")
-                                     cat(model_path)
                                      saveRDS(model, model_path)
                                    },
                                    saveEnsemble = function(included_models, predictions, ...) {
@@ -152,7 +157,8 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    },
 
                                    initialize=function(...) {
-                                     directories_ <<- list( Workspace = "yo")
+                                     directories_ <<- list( Workspace = "workspace", Project = "workspace/project_my_first_experiment")
+                                     
 
                                      callSuper(...)
                                      .self

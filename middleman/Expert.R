@@ -126,12 +126,9 @@ Expert <- setRefClass(Class = "Expert",
                                    performance <- c()
                                    # --- call Performance Evaluator ---
                                    # get metrics extracted from confusion matrix
-                                   str(predictions)
-                                   
                                    if(!is.null(predictions)) performance_evaluator_$setPredictions(predictions = predictions)
                                    performance_evaluator_$setActualClass(actual_class = actual_class)
                                    if(performance_metric == "auc" ) {
-                                     str("calculating auc")
                                      performance <- performance_evaluator_$calculateAUC(predicted_probs = predicted_probs)
                                    } else {
                                      performance <- performance_evaluator_$calculateConfusionMatrixMetrics(selected_metric = performance_metric)

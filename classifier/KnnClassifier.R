@@ -11,23 +11,17 @@ KnnClassifier <- setRefClass(Class = "KnnClassifier",
 )
 
 KnnClassifier$methods(
-  trainModel = function(training_dataset, parameters, project_dir) {
+  trainModel = function(training_dataset, parameters) {
     'Train a classification model.'
-    project_dir_ <<- project_dir
     optParameters <- expand.grid( k = c(parameters$k)
                                   )
     
     #train model
-    trained_model <- train(Class ~ ., data = training_dataset,
-                           method = "knn", #knn with parameters k(number of neighbors)
+    trained_model <- suppressWarnings(train(Class ~ ., data = training_dataset,
+                           method = model_name_,
                            tuneGrid = optParameters,
-                           trControl=trainControl(method="none", classProbs =  TRUE)
+                           trControl=trainControl(method="none", classProbs =  TRUE))
     )
-    #save model 
-    model_dir <- file.path(project_dir, "model/model_files")
-    model_file <- file.path(model_dir, "knn_model.rds")
-    #print(model_file)
-    saveRDS(trained_model, model_file)
     return(trained_model)
   },
   initialize=function(...) {

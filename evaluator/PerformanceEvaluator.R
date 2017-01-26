@@ -43,7 +43,6 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                         calculateAUC = function(predicted_probs, ...) {
                           'Returns area under ROC-curve' 
                           # probabilities extracted from trained model are needed
-                          str(predicted_probs)
                           roc_curve <- pROC::roc(predictor = predicted_probs$Positive,
                                          response = actual_class_
                                          )

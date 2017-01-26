@@ -68,7 +68,7 @@ Server <- setRefClass(Class = "Server",
                                  testing_dataset <- dataset[-train_indexes, ]
                                  # advice expert for right performance metric
                                  performance_expert <- Expert$new()
-                                 performance_metric_ <- performance_expert$choosePerformanceMetric(model_name = model_name, dataset = train_dataset)
+                                 performance_metric_ <<- performance_expert$choosePerformanceMetric(model_name = model_name, dataset = train_dataset)
                                  stored_processed_datasets <- list()
                                  stored_opt_parameters <- list()
                                  stored_classifiers <- list()
@@ -295,7 +295,7 @@ Server <- setRefClass(Class = "Server",
                                feature_visualizer_ <<- FeatureVisualizer$new()
                                performance_metric_ <<- ""
                                testing_technique_ <<- list(name = "holdout", ratio = 0.9)
-                               time_ <- 0
+                               time_ <<- 0
                                callSuper(...)
                                .self
                              }

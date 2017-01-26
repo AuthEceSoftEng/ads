@@ -7,30 +7,27 @@ setOldClass("train")
 ##' @export
 GenericClassifier <- setRefClass(Class = "GenericClassifier",
                      fields = list(
-                       dataset_ = "data.frame",
-                       num_models_ = "numeric",
+                       dataset_         = "data.frame",
+                       num_models_      = "numeric",
                        class_attribute_ = "data.frame",
-                       accuracy_ = "numeric",
-                       seed_ = "numeric",
-                       project_dir_ = "character",
-                       model_name_ = "character"
+                       accuracy_        = "numeric",
+                       seed_            = "numeric",
+                       model_name_      = "character"
                      ),
                      methods = list(
-                       getNumModels = function() {
+                       getNumModels = function(project_dir, ... ) {
                          'Returns the number of models in directory model/model_files.'
-                         num_models_ <<- length(getModels())
+                         num_models_ <<- length(getModels(project_dir))
                          return(num_models_)
                        },
-                       getModels = function() {
+                       getModels = function(project_dir, ...) {
                          'Returns the models in directory model/model_files.'
                          # project_dir <- server_$getProjectDir()
                          model_files_directory <- "model/model_files"
-                         
-                         model_files_directory <- file.path(project_dir_, model_files_directory)
-                         model_files <- list.files(model_files_directory, recursive = TRUE)
-                         model_files <- file.path(model_files_directory, model_files)
-                         
-                         models <- lapply(model_files, readRDS)
+                         model_files_directory <- file.path(project_dir, model_files_directory)
+                         model_files           <- list.files(model_files_directory, recursive = TRUE)
+                         model_files           <- file.path(model_files_directory, model_files)
+                         models                <- lapply(model_files, readRDS)
                          return(models)
                        },
                        getDataset = function() {
@@ -47,28 +44,28 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                        },
                        predictClassifier = function(model_to_pred, dataset, type = "raw") {
                          'Predicts using a classification model.'
-                         model <- model_to_pred
+                         model       <- model_to_pred
                          predictions <- predict(model, dataset, type = type)
                          return(predictions)
                        },
-                       calculateAccuracy = function(model_to_acc, test_dataset, class_attribute) { 
-                         'Calculate accuracy of classification model, provided as .rds entity.'
-                         #str(test_dataset)
-                         #str(model_to_acc)
-                         model_to_pred <- model_to_acc
-                         test_dataset$Class <- NULL
-                         probabilities <- predictClassifier(model_to_pred, dataset = test_dataset, type = "prob")
-                         indexes <- which((probabilities$Negative>0.5))
-                         predictions <- seq(1, nrow(probabilities))
-                         predictions[indexes] <- 0
-                         predictions[-indexes] <- 1
-                         predictions <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
-                         str(predictions)
-                         str(class_attribute)
-                         cm <- confusionMatrix(predictions, class_attribute)
-                         accuracy <- as.numeric(cm$overall['Accuracy'])
-                         return(accuracy)
-                       },
+                       # calculateAccuracy = function(model_to_acc, test_dataset, class_attribute) {
+                       #   'Calculate accuracy of classification model, provided as .rds entity.'
+                       #   #str(test_dataset)
+                       #   #str(model_to_acc)
+                       #   model_to_pred <- model_to_acc
+                       #   test_dataset$Class <- NULL
+                       #   probabilities <- predictClassifier(model_to_pred, dataset = test_dataset, type = "prob")
+                       #   indexes <- which((probabilities$Negative>0.5))
+                       #   predictions <- seq(1, nrow(probabilities))
+                       #   predictions[indexes] <- 0
+                       #   predictions[-indexes] <- 1
+                       #   predictions <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
+                       #   str(predictions)
+                       #   str(class_attribute)
+                       #   cm <- confusionMatrix(predictions, class_attribute)
+                       #   accuracy <- as.numeric(cm$overall['Accuracy'])
+                       #   return(accuracy)
+                       # },
                        setDataset = function(dataset) {
                          'Set private dataset of Classifier.'
                          dataset_ <<- dataset
@@ -87,10 +84,9 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          return(model_name_)
                        },
                        initialize=function(...) {
-                         seed_ <<- 1
-                         set.seed(seed_)
+                         seed_       <<- 1
                          num_models_ <<- 0
-                         accuracy_ <<- 0
+                         accuracy_   <<- 0
                          callSuper(...)
                          .self
                        }

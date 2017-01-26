@@ -48,10 +48,8 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                rare_frequencies <- lapply(frequencies, function(x) which(x < factor_threshold_))
                                return_dataset <- as.data.frame(matrix(nrow = nrow(dataset), ncol = 1))
                                # update data_prepare_info with names of compressed_attributes
-                               str(names(rare_frequencies))
                                info_$compressed_attributes <<- c(names(dataset[,names(rare_frequencies)]))
                                for(i in seq(1, length(rare_frequencies))) {
-                                 cat(i)
                                  #dataset_column <- apply(as.data.frame(dataset[,i]), 2 , function(x) x)
                                  dataset_column <- apply(as.data.frame(dataset[,i]), 2, function(x) mapvalues(x, from = names(rare_frequencies[[i]]), to = rep("rare", length(rare_frequencies[[i]]))))
                                  return_dataset <- cbind(return_dataset, dataset_column)
