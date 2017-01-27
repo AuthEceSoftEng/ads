@@ -14,31 +14,32 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                         info_ = "list"
                         ),
                       methods = list(
-                        calculateConfusionMatrixMetrics = function(selected_metric, ...) {
+                        calculateConfusionMatrixMetrics = function(selected_metrics, ...) {
                           'Returns a list of metrics (defined by the vector selected_metrics) derived from confusion matrix.'
                           # calculate confusion matrix
                           cm <- caret::confusionMatrix(predictions_, actual_class_)
-                          TP <- cm$table[1, 1]
-                          TN <- cm$table[2, 2]
-                          FP <- cm$table[1, 2]
-                          FN <- cm$table[2, 1]
+                          TP <- as.numeric(cm$table[1, 1])
+                          TN <- as.numeric(cm$table[2, 2])
+                          FP <- as.numeric(cm$table[1, 2])
+                          FN <- as.numeric(cm$table[2, 1])
                           # derive accuracy ((TP + TN) / (TP + TN + FP + FN))
-                          accuracy <- as.numeric(cm$overall['Accuracy'])
+                          accuracy      <- as.numeric(cm$overall['Accuracy'])
                           # derive recall ((TP)/(TP + FN))
-                          recall <- (TP)/(TP + FN)
+                          recall        <- (TP)/(TP + FN)
                           # derive precision ((TP)/(TP + FP))
-                          precision <- (TP)/(TP + FP)
+                          precision     <- (TP)/(TP + FP)
                           # derive F-measure (2*(precision*recall)/(precision + recall))
-                          Fmeasure <- 2*(precision*recall)/(precision + recall)
+                          Fmeasure      <- 2*(precision*recall)/(precision + recall)
                           # derive Matthew's correlation coefficient ((TP * TN -FP * FN)/((TP + FP) * (TP + FN) *(TN + FP) * (TN + FN)))
-                          Matthew_coeff <- (TP * TN -FP * FN)/((TP + FP) * (TP + FN) *(TN + FP) * (TN + FN))
+                          Matthew_coeff <- (TP * TN -FP * FN)/sqrt((TP + FP) * (TP + FN) *(TN + FP) * (TN + FN))
                           # return list of metrics
-                          conf_metrics <- list(Accuracy = accuracy, Recall = recall,
-                                               Precision = precision, Fmeasure = Fmeasure, Matthew_coeff = Matthew_coeff)
+                          conf_metrics  <- list(Accuracy = accuracy, Recall = recall,
+                                               Precision = precision, Fmeasure = Fmeasure,
+                                               Matthew_coeff = Matthew_coeff)
                           for(i in 1:length(selected_metrics)) {
-                            info_[[selected_metric[i]]] <<-  conf_metrics[[selected_metric[[i]]]]
+                            info_[[selected_metrics[i]]] <<-  conf_metrics[[selected_metrics[i]]]
                           }
-                          return(conf_metrics[[selected_metric]])
+                          return(conf_metrics[selected_metrics])
                         },
                         calculateAUC = function(predicted_probs, ...) {
                           'Returns area under ROC-curve' 
@@ -48,8 +49,7 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                                          )
                           info_$auc <<-  as.numeric(roc_curve$auc) 
                           return(as.numeric(roc_curve$auc))
-                          #Area under the curve: 0.8731
-                        },
+                          },
                         calculateARI = function(...) {
                           'Returns adjusted Rank Index'
                           # if interested, look for implementation here
