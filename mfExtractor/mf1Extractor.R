@@ -22,99 +22,89 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                            ##' @export
                            calculateStatisticalNumeric = function(dataset, ...) {
                              'Calculates statistical features of numeric attributes'
-                            features <- c('sum', 'mean', 'std', 'min', 'max', 'kurtosis', 'skewness')
+                            features        <- c('sum', 'mean', 'std', 'min', 'max', 'kurtosis', 'skewness')
                             dataset_numeric <- dataset
-                            sum <- apply( dataset_numeric, 2, sum, na.rm = TRUE)
-                            mean <- apply( dataset_numeric, 2, mean, na.rm = TRUE)
-                            std <- apply( dataset_numeric, 2, sd, na.rm = TRUE)
-                            min <- apply( dataset_numeric, 2, function(x) myMin(x))
-                            max <- apply( dataset_numeric, 2, function(x) myMax(x))
+                            if(is.null(dataset_numeric)) {
+                              return(as.data.frame(as.list(rep(NA, length(features))), col.names = features))
+                            }
+                            else {
+                            sum      <- apply( dataset_numeric, 2, sum, na.rm = TRUE)
+                            mean     <- apply( dataset_numeric, 2, mean, na.rm = TRUE)
+                            std      <- apply( dataset_numeric, 2, sd, na.rm = TRUE)
+                            min      <- apply( dataset_numeric, 2, function(x) myMin(x))
+                            max      <- apply( dataset_numeric, 2, function(x) myMax(x))
                             kurtosis <- apply( dataset_numeric, 2, e1071::kurtosis, na.rm = TRUE)
                             skewness <- apply( dataset_numeric, 2, e1071::skewness, na.rm = TRUE)
-                            values <- list(sum, mean, std, min, max, kurtosis, skewness)
-                            result <- as.data.frame( values, col.names = features)
+                            values   <- list(sum, mean, std, min, max, kurtosis, skewness)
+                            result   <- as.data.frame( values, col.names = features)
                             return(result)
+                            }
                              },
                            ##' @export
                            calculateStatisticalCategorical = function(dataset, ...) {
                              'Calculates statistical features of categorical attributes'
                             dataset_categorical <- dataset
-                            feat = as.data.frame(matrix(NA, nrow = ncol(dataset_categorical), ncol = 10))
-                            features <- c('Levels')
-                            # new_features <- c()
-                            # for (i in 1:ncol(dataset_categorical))
-                            # {
-                            #   num_levels <- levels(dataset_categorical[, i])
-                            #   count_levels <- count(dataset_categorical[, i])
-                             #  feat[i, 1] <- length(num_levels)
-                            #   for(j in 1:nrow(count_levels))
-                            #   {
-                             #    feat[i, 1+j] <- count_levels$freq[j]
-                             #    new_feature <- paste("Level", j, sep = "")
-                             #    features <- c(features, new_feature)
-                             #  }
-                               
-                               
-                            # }
-                             #feat <- feat[colSums(!is.na(feat)) > 0]  
-                             #feat[is.na(feat)] <- 0
-                             
-                               num_levels <- as.data.frame(lapply(dataset_categorical, function(x) nlevels(x)))
-                               feat<-as.data.frame(t(num_levels))
-                               if(nrow(feat)!=0) names(feat)[1] <- "Levels"
-                               return(feat)
-                            
-
+                            if(is.null(dataset_categorical)) {
+                              return( data.frame( Levels = NA))
+                            }
+                            else {
+                              feat       <- as.data.frame(matrix(NA, nrow = ncol(dataset_categorical), ncol = 10))
+                              features   <- c('Levels')
+                              num_levels <- as.data.frame(lapply(dataset_categorical, function(x) nlevels(x)))
+                              feat       <-as.data.frame(t(num_levels))
+                              if(nrow(feat)!=0) {
+                                names(feat)[1] <- "Levels"
+                              } 
+                              return(feat)
+                            }
                            },
                            ##' @export
                            calculateSimple = function(dataset, ...) {
                              'Calculates simple(describing dataset on the whole, rather than per attribute) features'
-                             features <- c('numFeatures', 'logNumFeatures',
-                                           'numPatterns','logNumPatterns',
-                                           'numPatternsNA', 'percPatternsNA',
-                                           'numFeaturesNA', 'percFeaturesNA',
-                                           'numNA', 'percNA',
-                                           'logNumNAs','numNumericFeatures',
-                                           'numCatFeatures', 'classProbMin', 
-                                           'classProbMax', 'classProbMean',
-                                          'classProbStd')
-
-                             numFeatures <- ncol(dataset)-1
-                             logNumFeatures <- log(numFeatures)
-                             numPatterns <- nrow(dataset)
-                             logNumPatterns <- log(numPatterns)
-                             numPatternsNA <-(rowMeans(is.na(dataset)) == 0)
-                             numPatternsNA <- length(numPatternsNA[numPatternsNA==FALSE])
-                             percnumPatternsNA <- numPatternsNA / numPatterns
-                             numFeaturesNA <-(colMeans(is.na(dataset)) == 0)
-                             numFeaturesNA <- length(numFeaturesNA[numFeaturesNA==FALSE])
-                             percnumFeaturesNA <- numFeaturesNA / numFeatures
-                             numNAs <- sum(is.na(dataset))
-                             percNA <-numNAs/(numFeatures*numPatterns)
-                             logNumNAs <- log(numNAs)
+                             features           <- c('numFeatures', 'logNumFeatures', 'numPatterns',
+                                                    'logNumPatterns', 'numPatternsNA', 'percPatternsNA', 
+                                                    'numFeaturesNA', 'percFeaturesNA',  'numNA', 'percNA',
+                                                    'logNumNAs','numNumericFeatures', 'numCatFeatures',
+                                                    'classProbMin', 'classProbMax', 'classProbMean', 
+                                                    'classProbStd')
+                             numFeatures        <- ncol(dataset)-1
+                             logNumFeatures     <- log(numFeatures)
+                             numPatterns        <- nrow(dataset)
+                             logNumPatterns     <- log(numPatterns)
+                             numPatternsNA      <- (rowMeans(is.na(dataset)) == 0)
+                             numPatternsNA      <- length(numPatternsNA[numPatternsNA==FALSE])
+                             percnumPatternsNA  <- numPatternsNA / numPatterns
+                             numFeaturesNA      <- (colMeans(is.na(dataset)) == 0)
+                             numFeaturesNA      <- length(numFeaturesNA[numFeaturesNA==FALSE])
+                             percnumFeaturesNA  <- numFeaturesNA / numFeatures
+                             numNAs             <- sum(is.na(dataset))
+                             percNA             <- numNAs/(numFeatures*numPatterns)
+                             logNumNAs          <- log(numNAs)
                              numNumericFeatures <- length( names(dataset[sapply(dataset,class) == "integer"]))
-                             numCatFeatures <- length( names(dataset[sapply(dataset,class) == "factor"]))
-                             classProbs <- table(dataset$Class)/numPatterns
-                             classProbMin <-min(classProbs)
-                             classProbMax <-max(classProbs)
-                             classProbMean <-mean(classProbs)
-                             classProbStd <-sd(classProbs)
-                             values <- list(numFeatures, logNumFeatures, numPatterns, logNumPatterns,numPatternsNA,percnumPatternsNA
-                                            , numFeaturesNA, percnumFeaturesNA,numNAs , percNA , logNumNAs,
-                                            numNumericFeatures, numCatFeatures , classProbMin, classProbMax, classProbMean,
-                                            classProbStd)
+                             numCatFeatures     <- length( names(dataset[sapply(dataset,class) == "factor"]))
+                             classProbs         <- table(dataset$Class)/numPatterns
+                             classProbMin       <- min(classProbs)
+                             classProbMax       <- max(classProbs)
+                             classProbMean      <- mean(classProbs)
+                             classProbStd       <- sd(classProbs)
+                             values <- list(numFeatures, logNumFeatures, numPatterns,
+                                            logNumPatterns,numPatternsNA,percnumPatternsNA,
+                                            numFeaturesNA, percnumFeaturesNA,numNAs,
+                                            percNA , logNumNAs, numNumericFeatures,
+                                            numCatFeatures , classProbMin, classProbMax,
+                                            classProbMean, classProbStd)
                              result <- as.data.frame( values, col.names = features)
                              return(result)
                            },
                            ##' @export
                            calculateInformationTheroretic = function(dataset, ...) {
                              'Calculates information theoretic features(Class entropy)'
-                             numPatterns <-nrow(dataset)
-                             p <- table(dataset$Class)/numPatterns
-                             entropy <- sum(-p*log(p))
-                             features <- c("Class Entropy")
-                             values <- list(entropy)
-                             result <-as.data.frame( values, col.names = features)
+                             numPatterns <- nrow(dataset)
+                             p           <- table(dataset$Class)/numPatterns
+                             entropy     <- sum(-p*log(p))
+                             features    <- c("Class Entropy")
+                             values      <- list(entropy)
+                             result      <-as.data.frame( values, col.names = features)
                              return(result)
 
                            },
