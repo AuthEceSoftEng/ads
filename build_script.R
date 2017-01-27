@@ -5,8 +5,23 @@ if(!require(caret))
 {
   print("You are missing the package 'caret', we will now try to install it...")
   install.packages("caret")
-  library(coin)
+  library(caret)
 }
+
+if(!require(FactoMineR))
+{
+  print("You are missing the package 'FactoMineR', we will now try to install it...")
+  install.packages("FactoMineR")
+  library(FactoMineR)
+}
+
+if(!require(MASS))
+{
+  print("You are missing the package 'MASS', we will now try to install it...")
+  install.packages("MASS")
+  library(MASS)
+}
+
 
 if(!require(coin))
 {
@@ -42,6 +57,8 @@ if(!require(XML))
   install.packages("XML")
   library(XML)
 }
+
+
 source("middleman/FileManipulator.R")
 source("classifier/GenericClassifier.R")
 source("classifier/AnnClassifier.R")
