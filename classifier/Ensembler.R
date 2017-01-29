@@ -105,7 +105,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      sum_negative            <- rep(0,nrow(datasets[[1]]))
                                      sum_positive            <- rep(0,nrow(datasets[[1]]))
                                      # brute-force way to initialize sum_model_probabilities and probabilities
-
+                                     str(datasets[[1]])
                                      sum_model_probabilities          <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
                                      sum_model_probabilities$Negative <- rep(0,nrow(datasets[[1]]))
                                      sum_model_probabilities$Positive <- rep(0,nrow(datasets[[1]]))
@@ -113,6 +113,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      probabilities$Negative           <- rep(0,nrow(datasets[[1]]))
                                      probabilities$Positive           <- rep(0,nrow(datasets[[1]]))
                                      for(k in seq(1,length(models))) {
+                                       str(datasets[[k]])
                                        model <- models[[k]]
                                        model_probabilities[[k]]         <- classifier_$predictClassifier(model, dataset = datasets[[k]], type = "prob")
                                        sum_negative                     <- model_probabilities[[k]]$Negative + sum_negative

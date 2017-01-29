@@ -36,7 +36,6 @@ InapRemover <- setRefClass(Class = "InapRemover",
                                 dataset_treated[dataset_treated =="Inf"]  <- rep_pos
                                 dataset_treated[dataset_treated =="-Inf"] <- rep_neg
                               }
-                             
                               return(dataset_treated)
                             },
                             removeOutliers = function(dataset, thres_factor =1.5, outlier_action = list(rep = 0), ...) {
