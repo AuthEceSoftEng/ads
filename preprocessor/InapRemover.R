@@ -9,7 +9,7 @@ InapRemover <- setRefClass(Class = "InapRemover",
 
                           ),
                           methods = list(
-                            removeUnknown = function(dataset, unknown_action = list( act = "delete", rep = 0), ...) {
+                            removeUnknown = function(dataset, unknown_action = list( act = "replace", rep = 0), ...) {
                               'Treats unknown values according to the action (a list indicating whether na entries should lead to deletion of rows or replacement with desired value)'
                               dataset_treated <- dataset
                               na_info         <- list( number = sum(is.na(dataset)), technique = unknown_action$act)
@@ -25,16 +25,21 @@ InapRemover <- setRefClass(Class = "InapRemover",
                             removeInfinites = function(dataset, inf_action = list( act= "delete", rep_pos = 1, rep_neg = 0),...) {
                               'Replace +Inf with and -Inf with desired values'
                               dataset_treated <- dataset
-                              inf_info        <- list( number_positive = sum((dataset_treated =="Inf")),
-                                                       number_negative = sum((dataset_treated =="-Inf")), technique = inf_action$act)
-                              info_$Infs      <<- inf_info
+                              #inf_info        <- list( number_positive = sum((dataset_treated[dataset_treated =="Inf"])),
+                              #                         number_negative = sum((dataset_treated[dataset_treated =="-Inf"])), technique = inf_action$act)
+                              #info_$Infs      <<- inf_info
                               if(inf_action$act == "delete") {
-                                dataset_treated[dataset_treated =="Inf"]  <- NA
-                                dataset_treated[dataset_treated =="-Inf"] <- NA
+                                inf_action$rep_neg <- NA
+                                inf_action$rep_pos <- NA
                               }
-                              else if(inf_action$act == "replace") {
-                                dataset_treated[dataset_treated =="Inf"]  <- rep_pos
-                                dataset_treated[dataset_treated =="-Inf"] <- rep_neg
+                              for (i in 1:ncol(dataset_treated)) {
+                                a <- dataset_treated[,i]
+                                if(is.numeric(a)) {
+                                  a[is.infinite(a) & a < 0] <- inf_action$rep_neg
+                                  a[is.infinite(a) & a > 0] <- inf_action$rep_neg
+                                  dataset_treated[,i]  <- a
+                                }
+                              
                               }
                               return(dataset_treated)
                             },

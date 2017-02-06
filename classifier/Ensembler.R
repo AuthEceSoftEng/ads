@@ -27,9 +27,16 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      for ( i in c(1:length(models_to_eval))) {
                                        model_to_acc              <- models_to_eval[[i]]
                                        # train model to get binary predictions
+                                       cat("try to predict")
+                                       str(test_dataset_)
                                        predictions               <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
                                        predicted_probs           <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
+                                       cat("predicted")
                                        # train model to get prob ability predictions
+                                       cat("uevaluate ensembles' s performance")
+                                       str(predictions)
+                                       cat(length(predictions))
+                                       
                                        performance               <- expert_$getPerformance(as.factor(predictions), actual_class = class_attribute_,
                                                                                            predicted_probs= predicted_probs, performance_metric = performance_metric_)
                                        sampled_performances[[i]] <- performance
@@ -81,7 +88,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      total_models <- classifier_$getModels(project_dir = project_dir) 
                                      # update info of ensemble
                                      # ATTENTION: CONNECT p_ WITH SAMPLE 
-                                     size_of_sample  <- floor(p_ * length(total_models))
+                                     size_of_sample  <- ceiling(p_ * length(total_models))
                                      #  for each bootstrap sample
                                      for ( i in c(1:M_)) {
                                        # get sample of all models
@@ -105,28 +112,30 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      sum_negative            <- rep(0,nrow(datasets[[1]]))
                                      sum_positive            <- rep(0,nrow(datasets[[1]]))
                                      # brute-force way to initialize sum_model_probabilities and probabilities
-                                     str(datasets[[1]])
-                                     sum_model_probabilities          <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
-                                     sum_model_probabilities$Negative <- rep(0,nrow(datasets[[1]]))
-                                     sum_model_probabilities$Positive <- rep(0,nrow(datasets[[1]]))
-                                     probabilities                    <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
-                                     probabilities$Negative           <- rep(0,nrow(datasets[[1]]))
-                                     probabilities$Positive           <- rep(0,nrow(datasets[[1]]))
+                                     #sum_model_probabilities          <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
+                                     # sum_model_probabilities$Negative <- rep(0,nrow(datasets[[1]]))
+                                     # sum_model_probabilities$Positive <- rep(0,nrow(datasets[[1]]))
+                                     # probabilities                    <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
+                                     # probabilities$Negative           <- rep(0,nrow(datasets[[1]]))
+                                     # probabilities$Positive           <- rep(0,nrow(datasets[[1]]))
+                                     sum_model_probabilities <- list()
                                      for(k in seq(1,length(models))) {
-                                       str(datasets[[k]])
+                                       datasets[[k]]$Class <- NULL
                                        model <- models[[k]]
-                                       model_probabilities[[k]]         <- classifier_$predictClassifier(model, dataset = datasets[[k]], type = "prob")
-                                       sum_negative                     <- model_probabilities[[k]]$Negative + sum_negative
-                                       sum_positive                     <- model_probabilities[[k]]$Positive + sum_positive
-                                       sum_model_probabilities$Negative <- model_probabilities[[k]]$Negative + sum_model_probabilities$Negative
-                                       sum_model_probabilities$Positive <- model_probabilities[[k]]$Positive + sum_model_probabilities$Positive
+                                       cat("try to predict in ensemble")
+                                       model_probabilities[[k]] <- classifier_$predictClassifier(model, dataset = datasets[[k]], type = "prob")
+                                       cat("predicted")
+                                       model_probs              <- (model_probabilities[[k]])[[1]]
+                                       sum_negative             <- model_probs + sum_negative
+                                       sum_positive             <- model_probs + sum_positive
+
                                      }
+                                     sum_model_probabilities$Negative <- sum_negative$Negative/length(models)
+                                     sum_model_probabilities$Positive <- sum_positive$Positive/length(models)
                                      if(type == "prob") {
-                                       probabilities$Negative <- sum_model_probabilities$Negative/length(models)
-                                       probabilities$Positive <- sum_model_probabilities$Positive/length(models)
-                                       return(probabilities)
+                                       return(sum_model_probabilities)
                                      } else {
-                                       probabilities_negative <- sum_negative/length(models)
+                                       probabilities_negative <- sum_model_probabilities$Negative
                                        indexes                <- which(probabilities_negative > 0.5)
                                        predictions            <- seq(1, length(probabilities_negative))
                                        predictions[indexes]   <- 0
@@ -146,7 +155,14 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      num_models_                     <<- num_models_ + 1
                                      # update models included in ensemble (I don't mind including the same mode again)
                                      included_models_[[num_models_]] <<- model
-                                     performance_                    <<- expert_$getPerformance(predictions = NULL, actual_class = class_attribute_,
+                                     indexes                <- which(probabilities_$Negative > 0.5)
+                                     predictions            <- seq(1, length(probabilities_$Negative))
+                                     predictions[indexes]   <- 0
+                                     predictions[-indexes]  <- 1
+                                     predictions            <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
+                                     cat("update ensembles' s performance")
+                                     str(predictions)
+                                     performance_                    <<- expert_$getPerformance(predictions = predictions , actual_class = class_attribute_,
                                                                              predicted_probs = probabilities_, performance_metric = performance_metric_)
                                    },
                                    getInfo = function(...) {

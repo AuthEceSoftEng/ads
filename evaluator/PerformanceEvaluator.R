@@ -14,10 +14,10 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                         info_ = "list"
                         ),
                       methods = list(
-                        calculateConfusionMatrixMetrics = function(selected_metrics, ...) {
+                        calculateConfusionMatrixMetrics = function(selected_metrics, predictions, actual_class, ...) {
                           'Returns a list of metrics (defined by the vector selected_metrics) derived from confusion matrix.'
                           # calculate confusion matrix
-                          cm <- caret::confusionMatrix(predictions_, actual_class_)
+                          cm <- caret::confusionMatrix(predictions, actual_class)
                           TP <- as.numeric(cm$table[1, 1])
                           TN <- as.numeric(cm$table[2, 2])
                           FP <- as.numeric(cm$table[1, 2])
@@ -39,7 +39,7 @@ PerformanceEvaluator <- setRefClass(Class = "PerformanceEvaluator",
                           for(i in 1:length(selected_metrics)) {
                             info_[[selected_metrics[i]]] <<-  conf_metrics[[selected_metrics[i]]]
                           }
-                          return(conf_metrics[selected_metrics])
+                          return(conf_metrics[[selected_metrics]])
                         },
                         calculateAUC = function(predicted_probs, ...) {
                           'Returns area under ROC-curve' 

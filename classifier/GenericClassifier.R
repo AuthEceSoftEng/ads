@@ -27,7 +27,11 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          model_files_directory <- file.path(project_dir, model_files_directory)
                          model_files           <- list.files(model_files_directory, recursive = TRUE)
                          model_files           <- file.path(model_files_directory, model_files)
-                         models                <- lapply(model_files, readRDS)
+                         models <- list()
+                         for (i in 1:length(model_files)) {
+                           load(model_files[[i]])
+                           models[[i]] <- model
+                         }
                          return(models)
                        },
                        getDataset = function() {
@@ -44,6 +48,7 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                        },
                        predictClassifier = function(model_to_pred, dataset, type = "raw") {
                          'Predicts using a classification model.'
+                         newdata = na.omit(dataset)
                          model       <- model_to_pred
                          predictions <- predict(model, dataset, type = type)
                          return(predictions)

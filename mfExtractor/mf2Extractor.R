@@ -33,30 +33,36 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                 return(result)
                               },
                               ##' @export
-                              get2MetaFeatures = function(dataset, ...) {
+                              get2MetaFeatures = function(dataset, choice = "total",  ...) {
                                 'Returns level-2 metafeatures of a dataset. This is the interface of the package'
-                                drops                 <- names(dataset[sapply(dataset,class) == "factor"])
-                                dataset_cat           <- as.data.frame(dataset[ , (names(dataset) %in% drops)])
-                                dataset_numeric       <- as.data.frame(dataset[ , !(names(dataset) %in% drops)])
-                                result                <- list()
-                                hasNum                <- data.frame(hasNumeric = FALSE )
-                                hasCat                <- data.frame(hasCategorical = FALSE )
-                                hasNum$hasNumeric     <- TRUE
-                                statFeatsNumeric      <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_numeric)
-                                statsFeatsNumeric2    <- calculate2MetaFeatures(dataset=statFeatsNumeric)
-                                result<- statsFeatsNumeric2
-                                hasCat$hasCategorical <- TRUE
-                                statFeatsCat          <- mf1_extractor_$calculateStatisticalCategorical(dataset =dataset_cat)
-                                statFeatsCat2         <- calculate2MetaFeatures(dataset=statFeatsCat)
-                                if(length(result)!=0) {
-                                  result              <- cbind(result, statFeatsCat2)
-                                  
-                                } else {
-                                  result              <- statFeatsCat2
-                                } 
-                                simpleFeats           <-  mf1_extractor_$calculateSimple(dataset)
-                                informFeats           <- mf1_extractor_$calculateInformationTheroretic(dataset)
-                                result                <- cbind(result, simpleFeats, informFeats, hasNum, hasCat )
+                                if(choice == "total") {
+                                  drops                 <- names(dataset[sapply(dataset,class) != "numeric"])
+                                  dataset_cat           <- as.data.frame(dataset[ , (names(dataset) %in% drops)])
+                                  dataset_numeric       <- as.data.frame(dataset[ , !(names(dataset) %in% drops)])
+                                  result                <- list()
+                                  hasNum                <- data.frame(hasNumeric = FALSE )
+                                  hasCat                <- data.frame(hasCategorical = FALSE )
+                                  if(ncol(dataset_numeric) != 0) hasNum$hasNumeric     <- TRUE
+                                  if(ncol(dataset_cat) != 0)     hasCat$hasCategorical     <- TRUE
+                                  statFeatsNumeric      <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_numeric)
+                                  statsFeatsNumeric2    <- calculate2MetaFeatures(dataset=statFeatsNumeric)
+                                  result<- statsFeatsNumeric2
+                                  statFeatsCat          <- mf1_extractor_$calculateStatisticalCategorical(dataset =dataset_cat)
+                                  statFeatsCat2         <- calculate2MetaFeatures(dataset=statFeatsCat)
+                                  if(length(result)!=0) {
+                                    result              <- cbind(result, statFeatsCat2)
+                                    
+                                  } else {
+                                    result              <- statFeatsCat2
+                                  } 
+                                  simpleFeats           <-  mf1_extractor_$calculateSimple(dataset)
+                                  informFeats           <- mf1_extractor_$calculateInformationTheroretic(dataset)
+                                  result                <- cbind(result, simpleFeats, informFeats, hasNum, hasCat )
+                                }
+                                else if(choice == "autosklearn") {
+                                  result <- mf1_extractor_$calculateAutosklearn(dataset = dataset)
+                                }
+                                
                                 return(result)
                               },
                               ##' @export

@@ -16,6 +16,10 @@ InputParser <- setRefClass(Class = "InputParser",
                                  parseCommand = function(options, ...) {
                                    'Converts a string from the user to commands.'
                                    dataset_file_ <<- options$dataset
+                                   if(is.null(options$project)) {
+                                      dataset_name  <- substr(dataset_file_, start = 1, stop = nchar(dataset_file_) -4 )
+                                      options$project <- dataset_name
+                                   }      
                                    project_name_ <<- options$project
                                    server_$createProject( dataset_name = dataset_file_,
                                                           project_name = project_name_,

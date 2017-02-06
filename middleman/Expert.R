@@ -35,7 +35,7 @@ Expert <- setRefClass(Class = "Expert",
                                  # },
                                  choosePerformanceMetric = function(model_name, dataset, ...) {
                                    'Chooses appropriate performance metric according to heuristics'
-                                   performance_metric <- "auc"
+                                   performance_metric <- "Accuracy"
                                    return(performance_metric)
                                  },
                                  processTask = function(task, ...) {
@@ -83,12 +83,11 @@ Expert <- setRefClass(Class = "Expert",
                                    # process task to extract info about preprocessing
                                    if(!final) processTask(task)
                                    else processed_task_ <<- task
-
                                    # remove inappropriate values(NAs and infinites)
-                                   unknown_action <- list(act="delete", rep=0)
+                                   unknown_action <- list(act="replace", rep=0)
                                    inf_action     <- list(act="delete")
-                                   dataset        <- inap_remover_$removeUnknown(dataset, unknown_action =  unknown_action)
                                    dataset        <- inap_remover_$removeInfinites(dataset, inf_action = list(act="delete"))
+                                   dataset        <- inap_remover_$removeUnknown(dataset, unknown_action =  unknown_action)
                                    processed_task_$preprocess$inapproriate <<- list(NA_action = unknown_action, Inf_action = inf_action)
                                    # choose between minmax and zscore Normalization
                                    method <- chooseNormalizationMethod()
@@ -129,12 +128,12 @@ Expert <- setRefClass(Class = "Expert",
                                    applied_dataset <- dataset
                                    preprocess_task <- processed_task_$preprocess
                                    if(!is.null(preprocess_task$inapproriate)) {
+                                     if(!is.na(preprocess_task$inapproriate$Inf_action)) {
+                                       applied_dataset <- inap_remover_$removeInfinites(dataset, unknown_action = preprocess_task$inapproriate$Inf_action)
+                                     }
                                      if(!is.null(preprocess_task$inapproriate$NA_action)) {
                                        applied_dataset <- inap_remover_$removeUnknown(dataset = applied_dataset,
                                                                                       unknown_action = preprocess_task$inapproriate$NA_action)
-                                     }
-                                     if(!is.na(preprocess_task$inapproriate$Inf_action)) {
-                                       applied_dataset <- inap_remover_$removeUnknown(dataset, unknown_action = preprocess_task$inapproriate$Inf_action)
                                      }
                                    }
                                    if(!is.null(preprocess_task$normalize)) {
@@ -147,7 +146,6 @@ Expert <- setRefClass(Class = "Expert",
                                      }
                                      else if(!is.null(preprocess_task$normalize$zscore)) {
                                        #names(preprocess_task$normalize$zscore$std_of_columns)  <- names(applied_dataset)
-
                                        #names(preprocess_task$normalize$zscore$mean_of_columns) <- names(applied_dataset)
                                        applied_dataset                                       <- normalizer_$zscoreNormalize(dataset = applied_dataset,
                                                                                                                      precomputed = preprocess_task$normalize$zscore)
@@ -178,7 +176,8 @@ Expert <- setRefClass(Class = "Expert",
                                    if(performance_metric == "auc" ) {
                                      performance <- performance_evaluator_$calculateAUC(predicted_probs = predicted_probs)
                                    } else {
-                                     performance <- performance_evaluator_$calculateConfusionMatrixMetrics(selected_metric = performance_metric)
+                                     performance <- performance_evaluator_$calculateConfusionMatrixMetrics(selected_metrics = performance_metric,
+                                                                                                           actual_class = actual_class, predictions = predictions)
                                    }
                                      return(performance)
                                  },

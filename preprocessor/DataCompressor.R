@@ -14,54 +14,72 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                'Finds PCA features with desired variance. Takes into account only numeric features.'
                                library(caret)
                                # remove categorical attributes
-                               variables         <- names(dataset[sapply(dataset,class) == "factor"])
+                               variables         <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                num_dataset       <-  as.data.frame(dataset[, !(names(dataset) %in% variables)])
                                # remove Class
                                num_dataset$Class <- NULL
                                # apply PCA
-                               pre.total_data      <- predict.preProcess(num_dataset, 
-                                                                   method=c("BoxCox"),newdata=num_dataset)
-                               
-                               PCA                 <- prcomp(pre.total_data,
-                                                         center = TRUE,
-                                                     scale = TRUE)
-                               if(is.null(number_of_attributes)) {
-                                 keep                <- (which(cumsum((PCA$sdev)^2) / sum(PCA$sdev^2)>=variance)[1])
-                                 num_pca_attributes_ <<- keep
-                               } else {
-                                 keep                <- number_of_attributes
+                               if(ncol(num_dataset) != 0) {
+                                 pre.total_data      <- predict.preProcess(num_dataset, 
+                                                                           method=c(),newdata=num_dataset)
+                                 PCA                 <- prcomp(pre.total_data)
+                                 if(num_pca_attributes_ == 0) {
+                                   keep                <- (which(cumsum((PCA$sdev)^2) / sum(PCA$sdev^2)>=variance)[1])
+                                   num_pca_attributes_ <<- keep
+                                   trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                                 } else {
+                                   keep                <- num_pca_attributes_
+                                   if(ncol(PCA$x) < keep) {
+                                     
+                                     diff <- keep- ncol(PCA$x)
+                                     empty_data_frame <- as.data.frame(matrix(nrow = nrow(PCA$x), ncol = diff))
+                                     empty_data_frame[is.na(empty_data_frame)] <- 0
+                                     colnames(empty_data_frame) <- paste("PC", seq((ncol(PCA$x)+1) , keep), sep = "")
+                                     keep <- ncol(PCA$x)
+                                     trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                                     trans_dataset       <- cbind(trans_dataset, empty_data_frame)
+                                   } else {
+                                     trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                                   } 
+                                 }
+                                 trans_dataset$Class <- dataset$Class
+                                 pca_info  <- list(pertained_variance = variance, number_of_features = keep)
+                                 info_$PCA <<- pca_info
                                }
-                               trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                               else {
+                                 trans_dataset    <- dataset
+                               }
+                               
                                # reappend Class
                                trans_dataset$Class <- dataset$Class
                                # update info_ with info about PCA
-                               pca_info  <- list(pertained_variance = variance, number_of_features = keep)
-                               info_$PCA <<- pca_info
-                               return(as.data.frame(trans_dataset))
+                               
+                               return((trans_dataset))
                              },
                              performMDA = function(dataset,variance = 0.95, number_of_attributes = NULL, ...) {
                                library(FactoMineR)
                                library(MASS)
                                # prepare for MDA
-                               variables           <- names(dataset[sapply(dataset,class) == "factor"])
+                               variables           <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                cat_dataset         <-  dataset[, (names(dataset) %in% variables)]
                                transformed_dataset <- cat_dataset
-                               cat_dataset$Class   <- NULL
-                               # apply MDA
-                               mca                 <- FactoMineR::MCA(cat_dataset, ncp = ncol(cat_dataset), graph=FALSE)
-                               if(is.null(number_of_attributes)) {
-                                 st_dev              <- apply(mca$ind$coord, 2, sd)
-                                 keep                <- (which(cumsum((st_dev)^2) / sum(st_dev^2)>=variance)[1])
-                                 num_mda_attributes_ <<- keep
-                               } else {
-                                 keep                <- number_of_attributes
-                               }
-                               trans_dataset       <- data.frame(mca$ind$coord)[, 1:keep]
-                               trans_dataset$Class <- dataset$Class
-                               # update info_ with info about PCA
-                               mda_info  <- list(pertained_variance = variance, number_of_features = keep)
-                               info_$MDA <<- mda_info
-                               return(as.data.frame(trans_dataset))
+                               # cat_dataset$Class   <- NULL
+                               # # apply MDA
+                               # mca                 <- FactoMineR::MCA(cat_dataset, ncp = ncol(cat_dataset), graph=FALSE)
+                               # if( num_mda_attributes_ == 0) {
+                               #   st_dev              <- apply(mca$ind$coord, 2, sd)
+                               #   keep                <- (which(cumsum((st_dev)^2) / sum(st_dev^2)>=variance)[1])
+                               #   cat("first time")
+                               #   num_mda_attributes_ <<- keep
+                               # } else {
+                               #   keep                <- num_mda_attributes_
+                               # }
+                               # trans_dataset       <- data.frame(mca$ind$coord)[, 1:keep]
+                               # trans_dataset$Class <- dataset$Class
+                               # # update info_ with info about PCA
+                               # mda_info  <- list(pertained_variance = variance, number_of_features = keep)
+                               # info_$MDA <<- mda_info
+                               return(as.data.frame(transformed_dataset))
                                
                              },
                              getNumPCAAttributes  = function(...) {

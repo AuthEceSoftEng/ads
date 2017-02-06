@@ -25,19 +25,16 @@ Server <- setRefClass(Class = "Server",
                                return(directories_[field])
                              },
                              createProject = function(dataset_name, project_name, workspace_dir ) {
+                               #options(expressions = 10000)
                                'Creates the directory of current project'
                                # get ADS_workspace full-path from log.xml (or ADS.R)
                                # create project directory 
                                mainDir              <- workspace_dir
                                directories_         <<- list( Workspace = workspace_dir)
                                # if project_name is NULL give name of dataset
-                               dataset_name_csv     <- dataset_name
-                               dataset_name         <- substr(dataset_name_csv, start = 1, stop = nchar(dataset_name) -4 )
-                               if( is.null(project_name)) project_name <- dataset_name 
                                subDir               <- paste("project", project_name, sep = "_")
                                project_dir          <- file.path(mainDir, subDir)
                                directories_$Project <<- project_dir
-                               str(directories_)
                                subdirs_list         <- list("features/datasets", "features/data_visualization",
                                                     "model/model_files", "model/specifications/results",
                                                     "testing/statistical_log", "testing/statistical_tests"
@@ -56,9 +53,10 @@ Server <- setRefClass(Class = "Server",
                                # preprocess dataset
                                dictionary <- file_manipulator_$loadOrderedDictionary()
                                dataset    <- data_prepare_$convertAttributeTypes(dataset, dictionary)
-                               algorithms <-  c(SvmClassifier$new(), AnnClassifier$new(),
-                                                KnnClassifier$new(), BayesClassifier$new(),
-                                                TreeClassifier$new())
+                               # algorithms <-  c(SvmClassifier$new(), AnnClassifier$new(),
+                               #                  KnnClassifier$new(), BayesClassifier$new(),
+                               #                  TreeClassifier$new())
+                               algorithms <- c(KnnClassifier$new())
                                task       <- list()
                                # create training and testing partitions
                                partitions <- data_prepare_$partitionData(dataset, technique = testing_technique_)
@@ -74,6 +72,7 @@ Server <- setRefClass(Class = "Server",
                                  stored_classifiers        <- list()
                                  stored_experts            <- list()
                                  # -------- preprocess, tune and train a model for each classifier --------
+                                 cat("enter train")
                                  for(classifier in algorithms) {
                                    expert               <- Expert$new()
                                    algorithm            <- list(algorithm = class(classifier)[1])
@@ -86,17 +85,22 @@ Server <- setRefClass(Class = "Server",
                                    stored_experts[[model_name]]            <- expert
                                    # find metafeatures for parameter tuning
                                    # there is the possibility of different metafeatures for each algorithm
-                                   metafeature_dataset <- mf2_extractor_$get2MetaFeatures(dataset)
+                                   metafeature_dataset <- mf2_extractor_$get2MetaFeatures(dataset, choice = "autosklearn")
                                    # predict optimal hyperparameters
-                                   opt_params <- optimizer_$optimizeHParam(metafeature_dataset, algorithm = algorithm)
+                                   opt_params <- apply(as.data.frame(metafeature_dataset), 1, function(x) {
+                                     example  <- matrix(x, nrow=1, ncol=ncol(metafeature_dataset), byrow=TRUE)
+                                     example  <- data.frame(example)
+                                     colnames(example) = names(metafeature_dataset)
+                                     optimizer_$optimizeHParam(algorithm  = algorithm$algorithm, metafeatures = example)})
                                    # ATTENTION: IF OPT_PARAMS INCLUDES MORE THAN ONE COMBINATION OF PARAMETERS I HAVE TO CONSIDER ALL MODELS AND APPEND TO MODEL_NAME
                                    stored_opt_parameters[[model_name]] <- opt_params
                                    # train optimized model by calling each classifier's trainModel and save it under project's directory
                                    val_partitions        <- data_prepare_$partitionData(preprocessed_dataset, technique = list(name = "holdout", ratio = 0.9))
                                    training_dataset      <- preprocessed_dataset[val_partitions[,1], ]
                                    ensemble_test_dataset <- preprocessed_dataset[-val_partitions[,1], ]
-                                   model                 <- classifier$trainModel(training_dataset = training_dataset, parameters = opt_params)
-                                   file_manipulator_$saveModel(model = model, model_name = model$method )
+                                   models                <- classifier$trainModel(training_dataset = training_dataset, parameters = opt_params)
+                                   lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
+                                   cat("saved models")
                                 }
                                 # tune ensemble
                                 ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
@@ -110,11 +114,12 @@ Server <- setRefClass(Class = "Server",
                                   selected_model <- ensemble_models[[k]]
                                   model_name     <- selected_model$method
                                   # retrieve opt_params and preprocessed, which have already been computed
-                                  processed_dataset   <- stored_processed_datasets[[model_name]]
-                                  opt_param           <- stored_opt_parameters[[model_name]]
+                                  processed_dataset   <- selected_model$trainingData
+                                  opt_param           <- as.list(selected_model$finalModel$tuneValue)
+                                  opt_param           <- list(opt_param)
                                   ensemble_classifier <- stored_classifiers[[model_name]]
                                   # train model of ensemble
-                                  model                   <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
+                                  model                 <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
                                   final_datasets[[k]]     <- processed_dataset 
                                   models_for_testing[[k]] <- model
                                   current_expert          <- stored_experts[[model_name]]
@@ -145,13 +150,13 @@ Server <- setRefClass(Class = "Server",
                                 current_expert      <- stored_experts[[model_name]]
                                 processed_task      <- current_expert$getProcessedTask()
                                 processed_dataset   <- current_expert$choosePreprocessing(train_dataset, task = processed_task, final = TRUE)
-                                opt_param <- stored_opt_parameters[[model_name]]
+                                opt_param           <- as.list(selected_model$finalModel$tuneValue)
+                                opt_param           <- list(opt_param)
                                 ensemble_classifier <- stored_classifiers[[model_name]]
                                 # train model of ensemble
                                 model               <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
                                 final_datasets[[k]] <- processed_dataset 
                                 final_models[[k]]   <- model
-                                str(final_datasets[[k]])
                             }
                             # get ensemble predictions
                             final_predictions <- ensembler_$getEnsemblePredictions(models = final_models, datasets = final_datasets, type = "raw")
@@ -168,11 +173,9 @@ Server <- setRefClass(Class = "Server",
                                for(i in seq(1, length(included_models))) {
                                  model_info <- list()
                                  model      <- included_models[[i]]
+                                 model      <- model[[1]]
                                  model_name <- model$method
                                  parameters <- model$bestTune
-                                 for(j in seq(1, length(parameters))) {
-                                   model_name <- paste(model_name,names(parameters[j]), parameters[[j]] , sep = "_")
-                                 }
                                  # fill information of particular model
                                  model_info[["name"]] <- model$method
                                  # EACH MODEL MUST BE TESTED INDIDUALLY TO ATTACH PERFORMANCE( or do it in ensemble )
@@ -181,16 +184,15 @@ Server <- setRefClass(Class = "Server",
                                  parameters                  <- lapply(parameters, function(x) as.vector(x))
                                  model_info[["parameters"]]  <- parameters
                                  ensemble_info[[model_name]] <- model_info
-                                 model_name                  <- paste(model_name, "model.rds", sep = "_")
                                  file_manipulator_$saveModel(model, model_name)
                                }
                                # gather info about ensemble
                                ensemble_info[["ensemble_data"]] <- list(performance = performance, time = time_)
                                # save RData of ensemble
-                               file_manipulator_$saveRData(data = ensemble_info, file = paste(directories_$Project, "ensemble_info.RData", sep ="/"))
+                               file_manipulator_$saveRdata(data = ensemble_info, file = "ensemble_info.Rdata")
                                # save RData of experiment
                                experiment_info <- gatherExperimentInfo(experts, included_models = included_models, performance = performance, ensemble_expert = ensemble_expert)
-                               file_manipulator_$saveRData(data = experiment_info, file = paste(directories_$Project, "experiment_info.RData", sep ="/"))
+                               file_manipulator_$saveRdata(data = experiment_info, file = "experiment_info.Rdata")
                                # save data-visualization plots
                                feature_visualizer_$savePlots()
                                # save performance plots
@@ -221,7 +223,7 @@ Server <- setRefClass(Class = "Server",
                                  for(j in seq(1, length(parameters))) {
                                    model_name <- paste(model_name,names(parameters[j]), parameters[[j]] , sep = "_")
                                  }
-                                 model_name           <- paste(model_name, "model.rds", sep = "_")
+                                 model_name           <- paste(model_name, "model.Rdata", sep = "_")
                                  model_info[["name"]] <- model_name
                                  # EACH MODEL MUST BE TESTED INDIDUALLY TO ATTACH PERFORMANCE( or do it in ensemble )
                                  #model_info[["performance"]] <- model$performance
@@ -262,7 +264,7 @@ Server <- setRefClass(Class = "Server",
                                optimizer_              <<- Optimizer$new()
                                ensembler_              <<- Ensembler$new()
                                expert_                 <<- Expert$new()
-                               experiment_task_        <<- list(compare = list(techniques = "models", metric = "auc"))
+                               experiment_task_        <<- list(compare = list(techniques = "models", metric = "Accuracy"))
                                performance_visualizer_ <<- PerformanceVisualizer$new()
                                feature_visualizer_     <<- FeatureVisualizer$new()
                                performance_metric_     <<- ""

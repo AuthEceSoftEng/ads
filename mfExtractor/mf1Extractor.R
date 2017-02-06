@@ -139,79 +139,53 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                            "KurtosisMax",
                                            "KurtosisMean",
                                            "KurtosisSTD")
-                             # load landmarking accuracies
-                             # calculate PCA metafeatures
-                             # drop columns with zero-variance
-                             dataset <- dataset[,colSums(is.na(dataset))<nrow(dataset)]
-                             dataset[is.na(dataset)] <-0
-                             uniquelength <- sapply(dataset,function(x) length(unique(x)))
-                             dataset <- subset(dataset, select=uniquelength>1)
-                             # drop Class for PCA
-                             dataset_for_dim_red <- subset(dataset, select= -c(Class))
-                             variables <- names(dataset_for_dim_red[sapply(dataset_for_dim_red,class) == "factor"])
-                             if(length(variables)==0) {
-                               dataset_for_PCA <- dataset_for_dim_red
-                             }else {
-                               dataset_for_PCA <- as.data.frame(dataset_for_dim_red[, - which(names(dataset_for_dim_red) %in% variables)])
-                             } 
-                             dataset_for_MDA <- as.data.frame(dataset_for_dim_red[, (names(dataset_for_dim_red) %in% variables)])
-                             if(ncol(dataset_for_PCA)!= 0){
-                               pre.total_data <-predict.preProcess(dataset_for_PCA, 
-                                                                   method=c("BoxCox"),newdata=dataset_for_PCA)
+                             features <- features[7:length(features)]
+                             
+                             # keep only numeric features
+                             file_manipulator <- FileManipulator$new()
+                             test_dictionary  <- file_manipulator$loadOrderedDictionary()
+                             data_prepare     <- DataPrepare$new(factor_threshold_ = 1)
+                             dataset          <- data_prepare$convertAttributeTypes(dataset =  dataset , dictionary = test_dictionary)
+                             variables         <- names(dataset[sapply(dataset,class) != "numeric"])
+                             dataset_num       <-  as.data.frame(dataset[, !(names(dataset) %in% variables)])
+                             if(ncol( dataset_num )!=0) {
+                               inap_remover     <- InapRemover$new()
+                               dataset_num          <- inap_remover$removeInfinites(dataset =  dataset_num )
+                               dataset_num          <- inap_remover$removeUnknown(dataset =  dataset_num )
                                
-                             
-                               pca <- prcomp(pre.total_data,
-                                             center = TRUE,
-                                             scale = TRUE) 
-                               firstPC <- pca$x[,1]
-                               firstPCkurt <- e1071::kurtosis(firstPC)
-                               firstPCskew <- e1071::skewness(firstPC)
-                               fraction_for_95_variance <- (which(cumsum((pca$sdev)^2) / sum(pca$sdev^2)>0.95)[1])/ncol(pca$x)
-                             }else{
-                               mca <- FactoMineR::MCA(dataset_for_MDA, graph=FALSE)
-                               firstPC <- data.frame(mca$ind$coord)[,1]
-                               firstPCkurt <- e1071::kurtosis(firstPC)
-                               firstPCskew <- e1071::skewness(firstPC)
-                               fraction_for_95_variance <- min(which((mca$eig$`cumulative percentage of variance`>95)==TRUE))/ncol(dataset_for_MDA)
-                             }
-                             # I didnt do anything for MDA
-                             
-                             
-                             # calclulate skewness metafeatures
-                             if(nrow(dataset_for_PCA)!=0) {
-                               skew <- apply( dataset_for_PCA, 2, e1071::skewness, na.rm = TRUE)
+                               data_compressor  <- DataCompressor$new()
+                               data_compressed  <- data_compressor$performPCA(dataset =  dataset_num , variance = 0.95)
+                               firstPC          <- data_compressed[,1]
+                               fractionFor95    <-  data_compressor$getNumPCAAttributes()/ncol( dataset_num )
+                               firstPCkurt      <- e1071::kurtosis(firstPC)
+                               firstPCskew      <- e1071::skewness(firstPC)
+              
+                               # calclulate skewness metafeatures
+                               skew <- apply(  dataset_num , 2, e1071::skewness, na.rm = TRUE)
+                               str(skew)
                                skew_min <- min(skew)
                                skew_max <- max(skew)
                                skew_mean <- mean(skew)
                                skew_std <- sd(skew)
                                # calculate kurtosis metafeatures
-                               kurt <- apply( dataset_for_PCA, 2, e1071::kurtosis, na.rm = TRUE)
+                               kurt <- apply( dataset_num , 2, e1071::kurtosis, na.rm = TRUE)
                                kurt_min <- min(kurt)
                                kurt_max <- max(kurt)
                                kurt_mean <- mean(kurt)
                                kurt_std <- sd(kurt)
-                               values <- list(firstPCkurt, firstPCskew, fraction_for_95_variance, 
+                               values <- list(fractionFor95, firstPCkurt, firstPCskew,  
                                               skew_min, skew_max, skew_mean, skew_std,
                                               kurt_min, kurt_max, kurt_mean, kurt_std   )
-                             }else{
-                               skew_min <- 0
-                               skew_max <- 0
-                               skew_mean <- 0
-                               skew_std  <- 0
-                               kurt_min <- 0
-                               kurt_max <- 0
-                               kurt_mean <- 0
-                               kurt_std <- 0
-                             }
-                            
-                             features <- features[7:length(features)]
-                             result <- as.data.frame( values, col.names = features)
+                            } else{
+                              values <- list(fractionFor95 = NA, firstPCkurt= NA, firstPCskew= NA,  
+                                              skew_min= NA, skew_max= NA, skew_mean= NA, skew_std= NA,
+                                              kurt_min= NA, kurt_max= NA, kurt_mean= NA, kurt_std = NA  )
+                            }
+                            result <- as.data.frame( values, col.names = features)
                              
                            },
                            ##' @export
                            initialize = function(...) {
-
-
                              callSuper(...)
                              .self
                            }

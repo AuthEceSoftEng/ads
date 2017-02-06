@@ -15,7 +15,6 @@ AnnClassifier$methods(
       optParameters <- expand.grid( size = c(parameters$size) ,
                                     decay = c(parameters$decay)
       )
-      
       #train model
       trained_model <- suppressWarnings(train(Class ~ ., data = training_dataset,
                              method = model_name_, #Neural Network with parameters size and decay

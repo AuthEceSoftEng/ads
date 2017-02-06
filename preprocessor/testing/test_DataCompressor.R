@@ -12,6 +12,7 @@ test_that("Test performPCA",{
   test_dataset <- data_prepare$convertAttributeTypes(dataset = test_dataset, dictionary = test_dictionary)
   data_compressor <- DataCompressor$new()
   compressed_dataset <- data_compressor$performPCA(dataset = test_dataset, variance = 1)
+  str(compressed_dataset)
   expect_true(ncol(compressed_dataset) <= ncol(test_dataset))
 })
 

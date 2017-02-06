@@ -16,32 +16,52 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                info_$number_of_features <<- ncol(dataset) -1
                                # convert strings to factors
                                variables                <- names(dataset[sapply(dataset,class) == "character"])
-                               converted_dataset[, (names(dataset) %in% variables)] <- lapply(dataset[, (names(dataset) %in% variables)], as.factor)
+                               converted_dataset[, (names(dataset) %in% variables)] <- lapply(as.data.frame(dataset[, (names(dataset) %in% variables)]), as.factor)
                                factor_dataset           <- as.data.frame(converted_dataset[, (names(dataset) %in% variables)])
                                # deal with factors with too many levels by assigning rare levels them to a level of insignificance
-                               converted_dataset[, (names(dataset) %in% variables)] <- disposeRareLevels( dataset = factor_dataset)
+                               if(factor_threshold_ != 1) {
+                                 converted_dataset[, (names(dataset) %in% variables)] <- disposeRareLevels( dataset = factor_dataset)
+                               }
+                              
                                # convert numeric with too few levels to factors
                                factor_dataset              <- lapply(dataset, as.factor)
                                num_files_factor            <- lapply(factor_dataset, nlevels)
                                indexes                     <- which(num_files_factor<5)
-                               converted_dataset[,indexes] <- lapply(converted_dataset[,indexes], as.factor)
+                               converted_dataset[,indexes] <- lapply(as.data.frame(converted_dataset[,indexes]), as.factor)
                                # update info with names of factor_attributes
                                info_$factor_attributes <<- c(variables, names(converted_dataset[,indexes]))
                                # convert to ordinal factors based on dictionary
                                variables        <- variables[variables != "Class"]
-                               dataset_temp     <- converted_dataset[, (names(dataset) %in% variables)]
-                               is_name_ordered2 <- apply(dataset_temp, 2, function(x) (length(intersect(x,dictionary$Values)) != 0))
-                               is_name_ordered3 <- sapply(dataset_temp, function(x) ((names(x) %in% dictionary$Attributes)))
-                               temp <- as.vector(lapply(names(dataset_temp), function(x) x %in% dictionary$Attributes))
-                               is_value_ordered <- sapply(dataset_temp, function(x) length(intersect(x,dictionary$Values)) != 0)
-                               is_name_ordered  <- as.vector(unlist(lapply(names(dataset_temp), function(x) x %in% dictionary$Attributes)))
-                               is_ordered       <- is_value_ordered | is_name_ordered
-                               dataset_temp[, is_ordered == TRUE] <- lapply(dataset_temp[, is_ordered == TRUE], function(x) ordered(x))
-                               converted_dataset[, (names(dataset) %in% variables)] <- dataset_temp
-                               # update data_prepare_info with names of ordered_attributes
-                               info_$ordered_attributes <<- c(names(dataset_temp[, is_ordered == TRUE]))
+                               dataset_temp     <- as.data.frame(converted_dataset[, (names(dataset) %in% variables)])
+                               if(ncol(dataset_temp) != 0) {
+                                 is_value_ordered <- sapply(dataset_temp, function(x) length(intersect(x,dictionary$Values)) != 0)
+                                 is_name_ordered  <- as.vector(unlist(lapply(names(dataset_temp), function(x) x %in% dictionary$Attributes)))
+                                 if(is.null(is_value_ordered) | is.null(is_name_ordered)) is_ordered <- FALSE
+                                 else is_ordered       <- is_value_ordered | is_name_ordered                               
+                                 dataset_temp[, is_ordered == TRUE] <- lapply(as.data.frame(dataset_temp[, is_ordered == TRUE]), function(x) ordered(x))
+                                 converted_dataset[, (names(dataset) %in% variables)] <- dataset_temp
+                                 # update data_prepare_info with names of ordered_attributes
+                                 info_$ordered_attributes <<- c(names(dataset_temp[, is_ordered == TRUE]))
+                               }
+                               # drop factors with zero levels or one level
+                               counter <- 0
+                               for(i in 1:ncol(converted_dataset)) {
+                                 if(is.factor(converted_dataset[,i+counter])){
+                                   temp <- converted_dataset[,i+counter]
+                                   # replace NAs with zeros
+                                   if(NA %in% temp) {
+                                     temp = factor(temp, levels=c(levels(temp), 0))
+                                     temp[is.na(temp)] <- 0
+                                     converted_dataset[,i+counter] <- temp
+                                   }
+                                   if(nlevels((converted_dataset[,i+counter])) <=1 ) {
+                                     converted_dataset[,i + counter] <- NULL
+                                     counter <- counter -1
+                                   }
+                                 }
+                               }
                                # convert Class to factor even if it's numeric
-                               converted_dataset$Class  <- factor(converted_dataset$Class, levels = c(0,1), labels = c("Negative","Positive"))
+                               converted_dataset$Class  <- factor(converted_dataset$Class, levels = levels(converted_dataset$Class), labels = c("Negative","Positive"))
                                return(converted_dataset)
                              },
                              disposeRareLevels = function(dataset,  ... ) {
@@ -50,7 +70,7 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                frequencies       <- apply(dataset, 2, function(x) table(x)/length(x))
                                mean_frequencies  <- lapply(frequencies, function(x) mean(x))
                                factor_threshold_ <<- mean(unlist(mean_frequencies))
-                               rare_frequencies  <- lapply(frequencies, function(x) which(x < factor_threshold_))
+                               rare_frequencies  <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
                                return_dataset    <- as.data.frame(matrix(nrow = nrow(dataset), ncol = 1))
                                # update data_prepare_info with names of compressed_attributes
                                info_$compressed_attributes <<- c(names(dataset[,names(rare_frequencies)]))
@@ -88,7 +108,7 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                return(info_)
                              },
                              initialize=function(...) {
-                               factor_threshold_ <<- 0.05
+                               factor_threshold_ <<- 1
                                info_ <<- list()
                                callSuper(...)
                                .self

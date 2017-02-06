@@ -9,6 +9,23 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    directories_ = "list"
                                  ),
                                  methods = list(
+                                   loadHppModel = function(name, ...) {
+                                     'Loads a model for predicting hyperparameters'
+                                      workspace_dir   <- directories_$Workspace
+                                      hpp_models_path <- "HPP/models"
+                                      model_file      <- paste(workspace_dir, hpp_models_path, name, sep = "/")
+                                      load(model_file)
+                                      return(model)
+                                   },
+                                   loadModelInfo = function(name, ...) {
+                                     'Loads information about a model for predicting hyperparameters as a data.frame'
+                                     workspace_dir   <- directories_$Workspace
+                                     hpp_models_path <- "HPP/models"
+                                     info_file      <- paste(workspace_dir, hpp_models_path, name, sep = "/")
+                                     info           <- read.csv(info_file,
+                                                                 header = TRUE, sep=",", stringsAsFactors=FALSE)
+                                     return(info)
+                                   },
                                    loadDataset = function(name, ...) {
                                      'Loads file specified by name in repository with datasets into a data.frame'
                                      # get directory of datasets
@@ -70,11 +87,14 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      for(j in seq(1, length(parameters))) {
                                        model_file <- paste(model_file,names(parameters[j]), parameters[[j]] , sep = "_")
                                      }
-                                     model_file  <- paste(model_file, "model.rds", sep = "_")
+                                     model_file  <- paste(model_file, "model.Rdata", sep = "_")
                                      project_dir <- directories_$Project
                                      # create path to file
-                                     model_path  <- paste(project_dir, "model/model_files", model_file, sep = "/")
-                                     saveRDS(model, model_path)
+                                     current_path <- getwd()
+                                     setwd(project_dir)
+                                     model_path  <- paste("model/model_files", model_file, sep = "/")
+                                     save(model, file = model_path)
+                                     setwd(current_path)
                                      return(model_file)
                                    },
                                    saveEnsemble = function(included_models, info,  ...) {
@@ -127,10 +147,10 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    #   }
                                    #   return(xml) 
                                    # },
-                                   saveRData = function(data, file, ...) {
-                                     'Saves data in .RData formata'
-                                     file_name <- paste(directories_$Workspace, file, sep = "/")
-                                     save(data, file = file_name)
+                                   saveRdata = function(data, file, ...) {
+                                     'Saves data in .RDS formata'
+                                     file_name <- paste(directories_$Project, file, sep = "/")
+                                     save(x = data, file = file_name)
                                    },
                                    savePng = function(name, plot, ...) {
                                      'Saves a plot to a "name".png.'

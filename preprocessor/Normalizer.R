@@ -11,28 +11,30 @@ Normalizer <- setRefClass(Class = "Normalizer",
                             methods = list(
                               zscoreNormalize = function(dataset, precomputed, ...) {
                                 'Normalizes dataset, so that numerical attributes have zero mean and one variance(categorical ones stay unchanged).'
-                                variables         <- names(dataset[sapply(dataset,class) == "factor"])
+                                variables         <- names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                 num_names         <- names(dataset)[!(names(dataset) %in% variables)]
                                 scaled_dataset    <- dataset
                                 if(precomputed == c("std","mean")) {
-                                  scaled_dataset[, !(names(dataset) %in% variables)]  <- scale(dataset[, !(names(dataset) %in% variables)])
-                                  zscore_attr <- attributes(scale(dataset[, !(names(dataset) %in% variables)]))
-                                  zscore_attributes_ <<- list(std_of_columns = as.list(zscore_attr$`scaled:scale`), mean_of_columns = as.list(zscore_attr$`scaled:center`))
-                                  
+                                  scaled_dataset[, num_names]  <- scale(dataset[, num_names])
+                                  zscore_attr <- attributes(scale(dataset[, num_names]))
+                                  zscore_attributes_ <<- list(std_of_columns = as.vector(zscore_attr$`scaled:scale`), mean_of_columns = as.vector(zscore_attr$`scaled:center`))
                                 } else {
                                   desired_std <- precomputed$std_of_columns
                                   desired_mean <- precomputed$mean_of_columns
-                                  scaled_dataset[, !(names(dataset) %in% variables)] <- sapply(num_names,
-                                                                                               function(col) { (dataset[,col] - desired_mean[[col]])/desired_std[[col]] })
-                                }
-                                zscore_info       <- list( applied = TRUE)
-                                # zscore_info could contain mean and variance of each column(too bulky)
-                                info_$zscore_info <<- zscore_info
+                                  dataset_numeric <- as.data.frame(dataset[,num_names])
+                                  for(i in 1:ncol(dataset_numeric)) {
+                                    dataset_numeric[,i] <- (dataset_numeric[i] - desired_mean[i])/desired_std[i]
+                                  }
+                                  scaled_dataset[, num_names] <- dataset_numeric
+                               }
+                               zscore_info       <- list( applied = TRUE)
+                               # zscore_info could contain mean and variance of each column(too bulky)
+                               info_$zscore_info <<- zscore_info
                                 return(scaled_dataset)
                               },
                               minMaxNormalize = function(dataset, precomputed,  ...) {
                                 'Normalizes dataset, so that numerical attributes have range 0-1(categorical ones stay unchanged).'
-                                variables      <- names(dataset[sapply(dataset,class) == "factor"])
+                                variables      <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                 num_names      <- names(dataset)[!(names(dataset) %in% variables)]
                                 scaled_dataset <- dataset
                                 if(precomputed == c("min","max")) {
