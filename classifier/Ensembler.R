@@ -27,16 +27,10 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      for ( i in c(1:length(models_to_eval))) {
                                        model_to_acc              <- models_to_eval[[i]]
                                        # train model to get binary predictions
-                                       cat("try to predict")
-                                       str(test_dataset_)
                                        predictions               <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
                                        predicted_probs           <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
-                                       cat("predicted")
                                        # train model to get prob ability predictions
-                                       cat("uevaluate ensembles' s performance")
-                                       str(predictions)
-                                       cat(length(predictions))
-                                       
+
                                        performance               <- expert_$getPerformance(as.factor(predictions), actual_class = class_attribute_,
                                                                                            predicted_probs= predicted_probs, performance_metric = performance_metric_)
                                        sampled_performances[[i]] <- performance
@@ -47,10 +41,11 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    initializeEnsemble = function(project_dir, ...){
                                      'Initializes the ensemble with N best ranking models'
                                      N             <- floor(perc_initial_ * classifier_$getNumModels(project_dir = project_dir))
-                                     #str(N)
+                                     cat(paste("initial size", N, "\n", sep = " "))
                                      #rank models by its contribution
                                      models        <- classifier_$getModels(project_dir = project_dir)
                                      #str(models)
+                                     #contributions <- evaluateModelContribution(models_to_eval = models)
                                      contributions <- evaluateModelContribution(models_to_eval = models)
                                      #cat(contributions)
                                      # #pick N best models
@@ -91,9 +86,12 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      size_of_sample  <- ceiling(p_ * length(total_models))
                                      #  for each bootstrap sample
                                      for ( i in c(1:M_)) {
+                                       cat("iteration")
+                                       cat(i)
                                        # get sample of all models
                                        
                                        models          <- sample( x = total_models, replace = TRUE, size = size_of_sample)
+                                       cat(paste(length(models),"models to evaluate","\n", sep = " "))
                                        # evaluate contributions
                                        contributions   <- evaluateModelContribution(models_to_eval = models)
                                        # choose mode with best contribution
@@ -101,13 +99,15 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                        new_model       <- models[[new_model_index]]
                                        # update ensemble
                                        updateEnsemble(model = new_model)
+                                       str(performance_)
                                      }
                                       info_$parameters <<- list( initial_ensemble_size = M_, probability_of_inclusion = p_, size = length(included_models_))
                                       info_$tuning     <<- list(size = nrow(test_dataset))
                                       return(included_models_)
                                    },
-                                   getEnsemblePredictions = function(models, datasets, type = "prob", ...) {
+                                   getEnsemblePredictions = function(datasets, type = "prob", project_dir, ...) {
                                      'Returns  predictions for each model of list'
+                                     models <- classifier_$getModels(project_dir = project_dir) 
                                      model_probabilities     <- list()
                                      sum_negative            <- rep(0,nrow(datasets[[1]]))
                                      sum_positive            <- rep(0,nrow(datasets[[1]]))
@@ -122,16 +122,17 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      for(k in seq(1,length(models))) {
                                        datasets[[k]]$Class <- NULL
                                        model <- models[[k]]
-                                       cat("try to predict in ensemble")
                                        model_probabilities[[k]] <- classifier_$predictClassifier(model, dataset = datasets[[k]], type = "prob")
-                                       cat("predicted")
-                                       model_probs              <- (model_probabilities[[k]])[[1]]
-                                       sum_negative             <- model_probs + sum_negative
-                                       sum_positive             <- model_probs + sum_positive
+                                       str(model_probabilities[[k]])
+                                       model_probs              <- (model_probabilities[[k]])
+                                       str(model_probs)
+                                       sum_negative             <- model_probs[[1]] + sum_negative
+                                       sum_positive             <- model_probs[[2]] + sum_positive
 
                                      }
-                                     sum_model_probabilities$Negative <- sum_negative$Negative/length(models)
-                                     sum_model_probabilities$Positive <- sum_positive$Positive/length(models)
+                                     sum_model_probabilities$Negative <- sum_negative/length(models)
+                                     sum_model_probabilities$Positive <- sum_positive/length(models)
+                                     str(sum_model_probabilities)
                                      if(type == "prob") {
                                        return(sum_model_probabilities)
                                      } else {
@@ -160,8 +161,6 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      predictions[indexes]   <- 0
                                      predictions[-indexes]  <- 1
                                      predictions            <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
-                                     cat("update ensembles' s performance")
-                                     str(predictions)
                                      performance_                    <<- expert_$getPerformance(predictions = predictions , actual_class = class_attribute_,
                                                                              predicted_probs = probabilities_, performance_metric = performance_metric_)
                                    },
@@ -181,7 +180,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      # !!!initialize probabilities_ as data.frames with labels known from classifier_!!!
                                      test_dataset_  <<- data.frame()
                                      num_models_    <<- 0
-                                     perc_initial_  <<- 0.5
+                                     perc_initial_  <<- 0.3
                                      M_             <<- 5
                                      p_             <<- 0.5
                                      classifier_    <<- GenericClassifier$new()

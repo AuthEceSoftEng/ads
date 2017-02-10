@@ -14,6 +14,8 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                converted_dataset        <- dataset
                                # update data_prepare_info_ with total number of features (except Class)
                                info_$number_of_features <<- ncol(dataset) -1
+                               # drop NAs from Class
+                               converted_dataset <- converted_dataset[!is.na(converted_dataset$Class), ]
                                # convert strings to factors
                                variables                <- names(dataset[sapply(dataset,class) == "character"])
                                converted_dataset[, (names(dataset) %in% variables)] <- lapply(as.data.frame(dataset[, (names(dataset) %in% variables)]), as.factor)
@@ -54,13 +56,12 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                      temp[is.na(temp)] <- 0
                                      converted_dataset[,i+counter] <- temp
                                    }
-                                   if(nlevels((converted_dataset[,i+counter])) <=1 ) {
-                                     converted_dataset[,i + counter] <- NULL
-                                     counter <- counter -1
-                                   }
-                                 }
+                                  if(nlevels((converted_dataset[,i+counter])) <=1 ) {
+                                    converted_dataset[,i + counter] <- NULL
+                                    counter <- counter -1
+                                  }
+                                }
                                }
-                               # convert Class to factor even if it's numeric
                                converted_dataset$Class  <- factor(converted_dataset$Class, levels = levels(converted_dataset$Class), labels = c("Negative","Positive"))
                                return(converted_dataset)
                              },
@@ -81,7 +82,6 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                }
                                return_dataset[,1] <- NULL
                                return(return_dataset)
-                               
                              },
                              partitionData = function(dataset, technique = list(name = "kfold", ratio = 0.9), ..) {
                                'Returns training and testing partitions of data according to technique'

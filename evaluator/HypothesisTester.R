@@ -37,9 +37,10 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                         require(ggplot2)
                                         require(reshape2)
                                         perform_profiles <- melt(perform_profiles ,  id.vars = 'x', variable.name = 'algorithm')
+                                        str(perform_profiles$x)
                                         # plot on same grid, each series colored differently -- 
                                         # good if the series have same scale
-                                        ggplot(perform_profiles, aes(x, value)) + geom_line(aes(colour = series)) +
+                                        ggplot(perform_profiles, aes(value, x)) + geom_line(aes(colour = algorithm)) +
                                           ggtitle('Performance profile plot') + 
                                           labs(x="t",y="P") 
                                       },

@@ -62,12 +62,13 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                      names(total_results) <- as.vector(results_files)
                                      return(total_results)
                                    },
-                                   clearModels = function(...) {
+                                   clearModels = function(models_to_remove,...) {
                                      'Clears models in directory model/model_files of current project'
                                      project_dir      <- directories_$Project
                                      # create path to file
                                      models_path      <- paste(project_dir, "model/model_files", sep = "/" )
-                                     models_to_delete <- as.vector(paste(models_path, list.files(models_path), sep = "/"))
+                                     #str(paste(models_path, models_to_remove, sep = "/"))
+                                     models_to_delete <- as.vector(models_to_remove)
                                      unlink(models_to_delete)
                                    },
                                    loadOrderedDictionary = function(...) {
@@ -83,7 +84,7 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    saveModel = function(model, model_name, ...) {
                                      'Saves a trained machine learning model'
                                      model_file <- model_name
-                                     parameters <- model$bestTune
+                                     parameters <- model$finalModel$tuneValue
                                      for(j in seq(1, length(parameters))) {
                                        model_file <- paste(model_file,names(parameters[j]), parameters[[j]] , sep = "_")
                                      }

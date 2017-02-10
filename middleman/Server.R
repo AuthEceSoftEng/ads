@@ -72,7 +72,6 @@ Server <- setRefClass(Class = "Server",
                                  stored_classifiers        <- list()
                                  stored_experts            <- list()
                                  # -------- preprocess, tune and train a model for each classifier --------
-                                 cat("enter train")
                                  for(classifier in algorithms) {
                                    expert               <- Expert$new()
                                    algorithm            <- list(algorithm = class(classifier)[1])
@@ -100,28 +99,32 @@ Server <- setRefClass(Class = "Server",
                                    ensemble_test_dataset <- preprocessed_dataset[-val_partitions[,1], ]
                                    models                <- classifier$trainModel(training_dataset = training_dataset, parameters = opt_params)
                                    lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
-                                   cat("saved models")
                                 }
                                 # tune ensemble
                                 ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
                                                                         performance_metric = performance_metric_, project_dir = directories_$Project)
                                 # re-train ensemble_models
+                                total_models <- classifier$getModels(project_dir = directories_$Project)
+                                unused_models <- setdiff(total_models, ensemble_models)
+                                file_manipulator_$clearModels(models_to_remove = unused_models)
                                 models_for_testing <- list()
                                 final_datasets     <- list()
                                 test_datasets      <- list()
                                 for(k in seq(1,length(ensemble_models))) {
                                   # get algorithm's name
                                   selected_model <- ensemble_models[[k]]
-                                  model_name     <- selected_model$method
+                                  load(selected_model)
+                                  model_name     <- model$method
                                   # retrieve opt_params and preprocessed, which have already been computed
-                                  processed_dataset   <- selected_model$trainingData
-                                  opt_param           <- as.list(selected_model$finalModel$tuneValue)
+                                  processed_dataset   <- model$trainingData
+                                  opt_param           <- as.list(model$finalModel$tuneValue)
                                   opt_param           <- list(opt_param)
                                   ensemble_classifier <- stored_classifiers[[model_name]]
                                   # train model of ensemble
-                                  model                 <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
+                                  rm(model)
+                                  models                 <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
+                                  lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
                                   final_datasets[[k]]     <- processed_dataset 
-                                  models_for_testing[[k]] <- model
                                   current_expert          <- stored_experts[[model_name]]
                                   current_test_dataset    <- current_expert$applyPreprocessing(dataset = testing_dataset)
                                   test_datasets[[k]]      <- current_test_dataset
@@ -129,51 +132,60 @@ Server <- setRefClass(Class = "Server",
                                # APPLY PREPROCESSING ON TEST_DATASET
                                # get ensemble predictions
                               ensembler               <- Ensembler$new()
-                              predictions             <- ensembler$getEnsemblePredictions(models = models_for_testing, datasets = test_datasets, type = "raw")
-                              predicted_probabilities <- ensembler$getEnsemblePredictions(models = models_for_testing, dataset = test_datasets, type = "prob")
+                              predictions             <- ensembler$getEnsemblePredictions(datasets = test_datasets, type = "raw",
+                                                                                          project_dir = directories_$Project)
+                              predicted_probabilities <- ensembler$getEnsemblePredictions(dataset = test_datasets, type = "prob",
+                                                                                          project_dir = directories_$Project)
                               # report ensemble's performance
                               ensemble_expert      <- Expert$new()
                               ensemble_expert$processTask(task = list())
                               ensemble_performance <- ensemble_expert$getPerformance(predictions = as.factor(predictions), actual_class = test_datasets[[1]]$Class,
                                                                         predicted_probs = predicted_probabilities, performance_metric = performance_metric_)
 
-                            }
+                               }
                             # re-train ensemble's models on whole dataset for storing
                             final_models   <- list()
                             final_datasets <- list()
                             for(k in seq(1,length(ensemble_models))) {
                                 # get algorithm's name
                                 selected_model <- ensemble_models[[k]]
-                                model_name     <- selected_model$method
+                                load(selected_model)
+
+                                model_name     <- model$method
                                 # retrieve opt_params and preprocessed, which have already been computed
                                 # CAUTION: PREPROCESSED DATASETS MUST BE RE-COMPUTED
                                 current_expert      <- stored_experts[[model_name]]
                                 processed_task      <- current_expert$getProcessedTask()
                                 processed_dataset   <- current_expert$choosePreprocessing(train_dataset, task = processed_task, final = TRUE)
-                                opt_param           <- as.list(selected_model$finalModel$tuneValue)
+                                opt_param           <- as.list(model$finalModel$tuneValue)
                                 opt_param           <- list(opt_param)
                                 ensemble_classifier <- stored_classifiers[[model_name]]
+                                rm(model)
                                 # train model of ensemble
-                                model               <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
+                                models               <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
+                                lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
                                 final_datasets[[k]] <- processed_dataset 
-                                final_models[[k]]   <- model
+                                #final_models[[k]]   <- model
                             }
                             # get ensemble predictions
-                            final_predictions <- ensembler_$getEnsemblePredictions(models = final_models, datasets = final_datasets, type = "raw")
+                            final_predictions <- ensembler_$getEnsemblePredictions( datasets = final_datasets, type = "raw",
+                                                                                    project_dir = directories_$Project)
                             # save all useful information produced during the experiment
-                            saveExperimentInfo(included_models = final_models, predictions = final_predictions, performance = ensemble_performance, experts = stored_experts, ensemble_expert = ensemble_expert)
+                            saveExperimentInfo( predictions = final_predictions, performance = ensemble_performance, experts = stored_experts, ensemble_expert = ensemble_expert)
                           },
-                             saveExperimentInfo = function(included_models, performance, experts, ensemble_expert,  ...) {
+                             saveExperimentInfo = function(performance, experts, ensemble_expert,  ...) {
                                'Saves information about ensemble, individual models, pipeline of experiment and plots'
+                               classifier <- GenericClassifier$new()
+                               included_models <- classifier$getModels(project_dir = directories_$Project)
                                # ensemble_info (this list contains all info for ensemble.xml
                                ensemble_info <- list() 
                                # clear models produced during training
-                               file_manipulator_$clearModels()
                                # save models included in ensemble
                                for(i in seq(1, length(included_models))) {
                                  model_info <- list()
                                  model      <- included_models[[i]]
                                  model      <- model[[1]]
+                                 load(model)
                                  model_name <- model$method
                                  parameters <- model$bestTune
                                  # fill information of particular model
@@ -184,7 +196,7 @@ Server <- setRefClass(Class = "Server",
                                  parameters                  <- lapply(parameters, function(x) as.vector(x))
                                  model_info[["parameters"]]  <- parameters
                                  ensemble_info[[model_name]] <- model_info
-                                 file_manipulator_$saveModel(model, model_name)
+                                 #file_manipulator_$saveModel(model, model_name)
                                }
                                # gather info about ensemble
                                ensemble_info[["ensemble_data"]] <- list(performance = performance, time = time_)
@@ -214,8 +226,12 @@ Server <- setRefClass(Class = "Server",
                                  inap_remover     <-  experts[[i]]$getInapRemover()
                                  preprocess       <- list(data_compression = data_compressor$getInfo(), normalization = normalizer$getInfo(),
                                                     feature_engineering = feature_engineer$getInfo(), removing_inappropriate = inap_remover$getInfo())
+                                 experiment_info[[paste("algorithm_", i, sep = "")]] <- list(preprocess = preprocess)
+                               }
+                               for(i in 1:length(included_models)) {
                                  model_info       <- list()
                                  model            <- included_models[[i]]
+                                 load(model)
                                  model_name       <- model$method
                                  parameters       <- model$bestTune
                                  # fill information of particular model
@@ -230,8 +246,9 @@ Server <- setRefClass(Class = "Server",
                                  parameters                 <- as.list(model$bestTune)
                                  parameters                 <- lapply(parameters, function(x) as.vector(x))
                                  model_info[["parameters"]] <- parameters
-                                 experiment_info[[paste("model_", i, sep = "")]] <- list(preprocess = preprocess, model_info = model_info)
+                                 experiment_info[[paste("model_", i, sep = "")]] <- list(model_info = model_info)
                                }
+                               
                                # gather ensemble info
                                experiment_info$ensemble             <- ensembler_$getInfo()
                                experiment_info$ensemble$performance <- performance

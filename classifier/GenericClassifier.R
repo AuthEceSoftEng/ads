@@ -27,12 +27,7 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          model_files_directory <- file.path(project_dir, model_files_directory)
                          model_files           <- list.files(model_files_directory, recursive = TRUE)
                          model_files           <- file.path(model_files_directory, model_files)
-                         models <- list()
-                         for (i in 1:length(model_files)) {
-                           load(model_files[[i]])
-                           models[[i]] <- model
-                         }
-                         return(models)
+                         return(model_files)
                        },
                        getDataset = function() {
                          'Returns the private dataset of Classifier.'
@@ -47,9 +42,9 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          return(class_attribute_)
                        },
                        predictClassifier = function(model_to_pred, dataset, type = "raw") {
-                         'Predicts using a classification model.'
-                         newdata = na.omit(dataset)
-                         model       <- model_to_pred
+                         'Predicts using a classification model. Model_to_pred is the name of the file containing the model.'
+                         # load model
+                         load(model_to_pred)
                          predictions <- predict(model, dataset, type = type)
                          return(predictions)
                        },

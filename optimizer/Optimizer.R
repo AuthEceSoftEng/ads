@@ -45,25 +45,41 @@ Optimizer <- setRefClass(Class = "Optimizer",
                               'Returns a matrix with lower and upper confidence bounds for each parameter of model'
                               intervals_list  <- list()
                               parameters_list <- list()
+                              model_info <- file_manipulator_$loadModelInfo(name = paste(algorithm_, "parameters.csv", sep = "/") )
+                              trans <- model_info$Trans
                               #str(parameters)
                               for (i in 1:length(parameters$hyperparameters)) {
-                                model_info <- file_manipulator_$loadModelInfo(name = paste(algorithm_, "parameters.csv", sep = "/") )
+                                
                                 if(algorithm_ == "SvmClassifier") {
                                   
                                 }
                                 else if(algorithm_ == "KnnClassifier") {
                                   # load appropriate model
-                                  predictions      <- parameters$hyperparameters$k
-                                  n                <- model_info$Training_examples
-                                  s                <- model_info$Sd_Residuals
-                                  a                <- predictions
-                                  error            <- qnorm(0.975)*s/sqrt(n)
-                                  left             <- predictions - error
-                                  right            <- predictions + error
-                                  lwr              <- left 
-                                  upr              <- right
-                                  intervals        <- matrix(c(lwr, upr), nrow = nrow(metafeatures), ncol = 2 , byrow = FALSE)
-                                  parameter_vector <- seq(round(intervals[1]),round(intervals[2]),1)
+                                  predictions_with_confidence <- parameters$hyperparameters$k
+                                  predictions_with_confidence[predictions_with_confidence < 0] <- 0.0001
+                                  (predictions_with_confidence)
+                                  if(trans==0){
+                                    predictions_with_confidence[,"fit"] <- round(log(predictions_with_confidence[,"fit"]))
+                                    predictions_with_confidence[,"lwr"] <- round(log(predictions_with_confidence[,"lwr"]))
+                                    predictions_with_confidence[,"upr"] <- round(log(predictions_with_confidence[,"upr"]))
+                                  }else{
+                                    predictions_with_confidence[,"fit"] <- round((predictions_with_confidence[,"fit"]*trans +1)^(1/trans))
+                                    predictions_with_confidence[,"lwr"] <- round((predictions_with_confidence[,"lwr"]*trans +1)^(1/trans))
+                                    predictions_with_confidence[,"upr"] <- round((predictions_with_confidence[,"upr"]*trans +1)^(1/trans))
+                                    
+                                  }                                                                          
+                                                                                   
+                                  # n                <- model_info$Training_examples
+                                  # s                <- model_info$Sd_Residuals
+                                  # a                <- predictions
+                                  # error            <- qnorm(0.975)*s/sqrt(n)
+                                  # left             <- predictions - error
+                                  # right            <- predictions + error
+                                  # lwr              <- left 
+                                  # upr              <- right
+                                  # intervals        <- matrix(c(lwr, upr), nrow = nrow(metafeatures), ncol = 2 , byrow = FALSE)
+                                  interval <- predictions_with_confidence[,c("lwr", "upr")]
+                                  parameter_vector <- seq(round(interval[1]),round(interval[2]),1)
                                   
                                 }
                                 else if(algorithm_ == "TreeClassifier") {
@@ -72,7 +88,7 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                 }
                                 else if(algorithm_ == "BayesClassifier") {
                                 }
-                                intervals_list[[i]]  <- intervals
+                                intervals_list[[i]]  <- interval
                                 parameters_list[[(names(parameters$hyperparameters)[[i]])]] <- parameter_vector
                               }
                               return(parameters_list)
@@ -88,8 +104,7 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                 model_k                           <- file_manipulator_$loadHppModel(name = paste(algorithm_, knn_model_k_, sep = "/"))
                                 metafeatures[is.na(metafeatures)] <- 0
                                 #str(model_k)
-                                optimal_k      <- predict(model_k, metafeatures)
-                                #str(optimal_k)
+                                optimal_k      <- predict(model_k$finalModel, metafeatures, interval = "prediction", level = 0.5)
                                 # make predictions
                                 opt_parameters <- list( hyperparameters= list(k = optimal_k), model = model_k) 
                               }
@@ -103,7 +118,7 @@ Optimizer <- setRefClass(Class = "Optimizer",
                               
                             },
                               initialize = function(...) {
-                                knn_model_k_      <<- "svm_predicts_k.Rdata"
+                                knn_model_k_      <<- "lm_predicts_k.Rdata"
                                 file_manipulator_ <<- FileManipulator$new()
                                 algorithm_        <<- ""
                                 callSuper(...)
