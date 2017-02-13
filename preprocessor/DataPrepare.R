@@ -68,10 +68,12 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                              disposeRareLevels = function(dataset,  ... ) {
                                'Finds rare levels in categorical attributes and reassigns them to a new level'
                                library(plyr)
-                               frequencies       <- apply(dataset, 2, function(x) table(x)/length(x))
+                               frequencies       <- apply(dataset, 2, function(x) as.list(table(x)/length(x)))
                                mean_frequencies  <- lapply(frequencies, function(x) mean(x))
-                               factor_threshold_ <<- mean(unlist(mean_frequencies))
+                               rare_frequencies  <- 
+                               # factor_threshold_ <<- mean(unlist(mean_frequencies))
                                rare_frequencies  <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
+                               #names(rare_frequencies) <-  as.list(lapply(frequencies, function(x) names(which(x < factor_threshold_))))
                                return_dataset    <- as.data.frame(matrix(nrow = nrow(dataset), ncol = 1))
                                # update data_prepare_info with names of compressed_attributes
                                info_$compressed_attributes <<- c(names(dataset[,names(rare_frequencies)]))
@@ -81,6 +83,7 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                  return_dataset <- cbind(return_dataset, dataset_column)
                                }
                                return_dataset[,1] <- NULL
+                               colnames(return_dataset) <- names(dataset)
                                return(return_dataset)
                              },
                              partitionData = function(dataset, technique = list(name = "kfold", ratio = 0.9), ..) {

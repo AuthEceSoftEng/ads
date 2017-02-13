@@ -2,7 +2,7 @@ rm(list=ls())
 
 setwd("automl-software")
 
-projects_list <- list.dirs(path = "workspace/project_test_knn/new_new", full.names = TRUE, recursive = FALSE)
+projects_list <- list.dirs(path = "workspace/project_test_knn_tree/", full.names = TRUE, recursive = FALSE)
 projects_list
 
 accuracies <- c()
@@ -16,5 +16,5 @@ for (i in 1:length(projects_list)) {
   accuracies <- c(accuracies, accuracy )
   
 }
-write.csv(as.data.frame(accuracies), "/home/elena/R_ws/automl/HPP_train/train_knn/enseble_accuracies_new.csv" )
+write.csv(as.data.frame(accuracies), "/home/elena/R_ws/automl/HPP_train/enseble_accuracies_tree_knn.csv" )
 # save accuracies with names of files

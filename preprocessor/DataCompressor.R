@@ -27,6 +27,7 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                    keep                <- (which(cumsum((PCA$sdev)^2) / sum(PCA$sdev^2)>=variance)[1])
                                    num_pca_attributes_ <<- keep
                                    trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                                   colnames(trans_dataset) <- paste("PC", seq(1, keep), sep = "")
                                  } else {
                                    keep                <- num_pca_attributes_
                                    if(ncol(PCA$x) < keep) {
@@ -37,22 +38,24 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                      colnames(empty_data_frame) <- paste("PC", seq((ncol(PCA$x)+1) , keep), sep = "")
                                      keep <- ncol(PCA$x)
                                      trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                                     colnames(trans_dataset) <- paste("PC", seq(1,ncol(PCA$x)), sep = "")
                                      trans_dataset       <- cbind(trans_dataset, empty_data_frame)
                                    } else {
                                      trans_dataset       <- as.data.frame(PCA$x[, 1:keep])
+                                     colnames(trans_dataset) <- paste("PC", seq(1,keep), sep = "")
                                    } 
                                  }
                                  trans_dataset$Class <- dataset$Class
+                                 # update info_ with info about PCA
                                  pca_info  <- list(pertained_variance = variance, number_of_features = keep)
                                  info_$PCA <<- pca_info
                                }
                                else {
                                  trans_dataset    <- dataset
                                }
-                               
                                # reappend Class
                                trans_dataset$Class <- dataset$Class
-                               # update info_ with info about PCA
+                              
                                
                                return((trans_dataset))
                              },

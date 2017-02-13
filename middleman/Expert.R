@@ -104,7 +104,15 @@ Expert <- setRefClass(Class = "Expert",
                                    if(IsCompressRequired(dataset)) {
                                      dataset_numeric                         <- data_compressor_$performPCA(dataset)
                                      dataset_cat                             <- data_compressor_$performMDA(dataset)
-                                     dataset                                 <- cbind(dataset_numeric, dataset_cat)
+                                     if(ncol(dataset_numeric) == 0) {
+                                       dataset <- dataset_cat
+                                     } else if (ncol(dataset_cat) == 0) {
+                                       dataset <- dataset_numeric
+                                     }
+                                     else {
+                                       dataset                              <- cbind(dataset_numeric, dataset_cat)
+                                       
+                                     }
                                      dataset                                 <-  dataset[,unique(colnames(dataset))]
                                      processed_task_$preprocess$compress$PCA <<- list( num_attributes = data_compressor_$getNumPCAAttributes())
                                      processed_task_$preprocess$compress$MDA <<- list( num_attributes = data_compressor_$getNumMDAAttributes())

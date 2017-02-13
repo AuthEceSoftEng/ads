@@ -58,6 +58,13 @@ if(!require(XML))
   library(XML)
 }
 
+if(!require(kernlab))
+{
+  print("You are missing the package 'kernlab', we will now try to install it...")
+  install.packages("kernlab")
+  library(kernlab)
+}
+
 
 source("middleman/FileManipulator.R")
 source("classifier/GenericClassifier.R")

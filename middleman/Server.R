@@ -56,7 +56,7 @@ Server <- setRefClass(Class = "Server",
                                # algorithms <-  c(SvmClassifier$new(), AnnClassifier$new(),
                                #                  KnnClassifier$new(), BayesClassifier$new(),
                                #                  TreeClassifier$new())
-                               algorithms <- c(KnnClassifier$new())
+                               algorithms <- c(KnnClassifier$new(), TreeClassifier$new() )
                                task       <- list()
                                # create training and testing partitions
                                partitions <- data_prepare_$partitionData(dataset, technique = testing_technique_)
@@ -84,7 +84,7 @@ Server <- setRefClass(Class = "Server",
                                    stored_experts[[model_name]]            <- expert
                                    # find metafeatures for parameter tuning
                                    # there is the possibility of different metafeatures for each algorithm
-                                   metafeature_dataset <- mf2_extractor_$get2MetaFeatures(dataset, choice = "autosklearn")
+                                   metafeature_dataset <- mf2_extractor_$get2MetaFeatures(preprocessed_dataset, choice = "autosklearn")
                                    # predict optimal hyperparameters
                                    opt_params <- apply(as.data.frame(metafeature_dataset), 1, function(x) {
                                      example  <- matrix(x, nrow=1, ncol=ncol(metafeature_dataset), byrow=TRUE)
@@ -99,7 +99,7 @@ Server <- setRefClass(Class = "Server",
                                    ensemble_test_dataset <- preprocessed_dataset[-val_partitions[,1], ]
                                    models                <- classifier$trainModel(training_dataset = training_dataset, parameters = opt_params)
                                    lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
-                                }
+                                 }
                                 # tune ensemble
                                 ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
                                                                         performance_metric = performance_metric_, project_dir = directories_$Project)
@@ -110,6 +110,7 @@ Server <- setRefClass(Class = "Server",
                                 models_for_testing <- list()
                                 final_datasets     <- list()
                                 test_datasets      <- list()
+                                model_performances <- c()
                                 for(k in seq(1,length(ensemble_models))) {
                                   # get algorithm's name
                                   selected_model <- ensemble_models[[k]]
@@ -123,14 +124,23 @@ Server <- setRefClass(Class = "Server",
                                   # train model of ensemble
                                   rm(model)
                                   models                 <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
-                                  lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
+                                  model_files <- lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
                                   final_datasets[[k]]     <- processed_dataset 
                                   current_expert          <- stored_experts[[model_name]]
                                   current_test_dataset    <- current_expert$applyPreprocessing(dataset = testing_dataset)
                                   test_datasets[[k]]      <- current_test_dataset
-                               }
-                               # APPLY PREPROCESSING ON TEST_DATASET
-                               # get ensemble predictions
+                                  model_files <- model_files[[1]]
+                                  model <- model_files
+                                  model_expert     <- Expert$new()
+                                  model_classifier <- GenericClassifier$new()
+                                  predictions <- model_classifier$predictClassifier(model_to_pred = model, dataset = current_test_dataset , type = "raw")
+                                  predicted_probabilities <- model_classifier$predictClassifier(model_to_pred = model, dataset = current_test_dataset, type = "prob")
+                                  model_performance <- model_expert$getPerformance(predictions = as.factor(predictions), actual_class = current_test_dataset$Class,
+                                                                                     predicted_probs = predicted_probabilities, performance_metric = performance_metric_)
+                                  model_performances <- c(model_performances, model_performance)
+                                }
+                              # APPLY PREPROCESSING ON TEST_DATASET
+                              # get ensemble predictions
                               ensembler               <- Ensembler$new()
                               predictions             <- ensembler$getEnsemblePredictions(datasets = test_datasets, type = "raw",
                                                                                           project_dir = directories_$Project)
@@ -142,15 +152,15 @@ Server <- setRefClass(Class = "Server",
                               ensemble_performance <- ensemble_expert$getPerformance(predictions = as.factor(predictions), actual_class = test_datasets[[1]]$Class,
                                                                         predicted_probs = predicted_probabilities, performance_metric = performance_metric_)
 
-                               }
+                            }
                             # re-train ensemble's models on whole dataset for storing
                             final_models   <- list()
                             final_datasets <- list()
+                            counter <- 1
                             for(k in seq(1,length(ensemble_models))) {
                                 # get algorithm's name
                                 selected_model <- ensemble_models[[k]]
                                 load(selected_model)
-
                                 model_name     <- model$method
                                 # retrieve opt_params and preprocessed, which have already been computed
                                 # CAUTION: PREPROCESSED DATASETS MUST BE RE-COMPUTED
@@ -160,12 +170,17 @@ Server <- setRefClass(Class = "Server",
                                 opt_param           <- as.list(model$finalModel$tuneValue)
                                 opt_param           <- list(opt_param)
                                 ensemble_classifier <- stored_classifiers[[model_name]]
-                                rm(model)
                                 # train model of ensemble
                                 models               <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param)
+                                for(m in 1:length(models)) {
+                                  model <- models[[m]]
+                                  model$performance_metric <- model_performances[k]
+                                  models[[m]] <- model
+                                }
+
+                                # models              <- lapply(models, function(x) x$performance_metric <- model_performances[k])
                                 lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
                                 final_datasets[[k]] <- processed_dataset 
-                                #final_models[[k]]   <- model
                             }
                             # get ensemble predictions
                             final_predictions <- ensembler_$getEnsemblePredictions( datasets = final_datasets, type = "raw",
@@ -195,6 +210,7 @@ Server <- setRefClass(Class = "Server",
                                  parameters                  <- as.list(model$bestTune)
                                  parameters                  <- lapply(parameters, function(x) as.vector(x))
                                  model_info[["parameters"]]  <- parameters
+                                 
                                  ensemble_info[[model_name]] <- model_info
                                  #file_manipulator_$saveModel(model, model_name)
                                }
@@ -246,6 +262,8 @@ Server <- setRefClass(Class = "Server",
                                  parameters                 <- as.list(model$bestTune)
                                  parameters                 <- lapply(parameters, function(x) as.vector(x))
                                  model_info[["parameters"]] <- parameters
+                                 model_info[["performance"]] <- model$performance_metric
+                                 str(model_info$performance)
                                  experiment_info[[paste("model_", i, sep = "")]] <- list(model_info = model_info)
                                }
                                

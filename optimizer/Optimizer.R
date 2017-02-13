@@ -6,8 +6,8 @@ Optimizer <- setRefClass(Class = "Optimizer",
                           fields = list(
                             knn_model_k_      = "character",
                             file_manipulator_ = "FileManipulator",
-                            algorithm_        = "character"
-
+                            algorithm_        = "character",
+                            tree_model_cp_    = "character"
                           ),
                           methods = list(
                             optimizeHParamDefault = function(metafeature_dataset, algorithm,  ...) {
@@ -46,7 +46,6 @@ Optimizer <- setRefClass(Class = "Optimizer",
                               intervals_list  <- list()
                               parameters_list <- list()
                               model_info <- file_manipulator_$loadModelInfo(name = paste(algorithm_, "parameters.csv", sep = "/") )
-                              trans <- model_info$Trans
                               #str(parameters)
                               for (i in 1:length(parameters$hyperparameters)) {
                                 
@@ -54,6 +53,7 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                   
                                 }
                                 else if(algorithm_ == "KnnClassifier") {
+                                  trans <- model_info$Trans
                                   # load appropriate model
                                   predictions_with_confidence <- parameters$hyperparameters$k
                                   predictions_with_confidence[predictions_with_confidence < 0] <- 0.0001
@@ -83,6 +83,27 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                   
                                 }
                                 else if(algorithm_ == "TreeClassifier") {
+                                  prediction <- parameters$hyperparameters$cp
+                                  resid_median <- model_info$Laplace_median
+                                  pivot_quarts <- c(model_info$W_low, model_info$W_high)
+                                  # get prediction intervals  from pivot quartiles
+                                  predict_quants <- lapply(prediction, function(prediction) {
+                                    return(c(resid_median - pivot_quarts[2]*abs(prediction - resid_median), resid_median - pivot_quarts[1]*abs(prediction - resid_median)))
+                                  }
+                                  )
+                                  lwr <- lapply(predict_quants, function(x) {
+                                    return(x[1])
+                                  })
+                                  
+                                  upr <- lapply(predict_quants, function(x) {
+                                    return(x[2])
+                                  })
+                                  for_matrix <- c(prediction, lwr, upr )
+                                  predictions_with_confidence <- matrix(for_matrix, nrow = nrow(metafeatures), ncol = 3 , byrow = FALSE)
+                                  dimnames(predictions_with_confidence) = list( paste("dataset_", seq(1,nrow(metafeatures)), sep = ""),
+                                                                                c("fit", "lwr", "upr")) # column names 
+                                  interval <- predictions_with_confidence[,c("lwr", "upr")]
+                                  parameter_vector <- seq((unlist(interval[1])),unlist(interval[2]),0.1)
                                 }
                                 else if(algorithm_ == "AnnClassifier") {
                                 }
@@ -109,6 +130,11 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                 opt_parameters <- list( hyperparameters= list(k = optimal_k), model = model_k) 
                               }
                               else if(algorithm_ == "TreeClassifier") {
+                                model_cp        <- file_manipulator_$loadHppModel(name = paste(algorithm_, tree_model_cp_, sep = "/"))
+                                metafeatures[is.na(metafeatures)] <- 0
+                                optimal_cp      <-  kernlab::predict(model_cp, metafeatures) 
+                                # make predictions
+                                opt_parameters  <- list( hyperparameters= list(cp = optimal_cp), model = model_cp)
                               }
                               else if(algorithm_ == "AnnClassifier") {
                               }
@@ -119,6 +145,7 @@ Optimizer <- setRefClass(Class = "Optimizer",
                             },
                               initialize = function(...) {
                                 knn_model_k_      <<- "lm_predicts_k.Rdata"
+                                tree_model_cp_    <<- "ksvm_predicts_cp.Rdata"
                                 file_manipulator_ <<- FileManipulator$new()
                                 algorithm_        <<- ""
                                 callSuper(...)

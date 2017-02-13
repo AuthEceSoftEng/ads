@@ -14,6 +14,7 @@ Normalizer <- setRefClass(Class = "Normalizer",
                                 variables         <- names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                 num_names         <- names(dataset)[!(names(dataset) %in% variables)]
                                 scaled_dataset    <- dataset
+                                if(length(num_names ) != 0) {
                                 if(precomputed == c("std","mean")) {
                                   scaled_dataset[, num_names]  <- scale(dataset[, num_names])
                                   zscore_attr <- attributes(scale(dataset[, num_names]))
@@ -26,10 +27,12 @@ Normalizer <- setRefClass(Class = "Normalizer",
                                     dataset_numeric[,i] <- (dataset_numeric[i] - desired_mean[i])/desired_std[i]
                                   }
                                   scaled_dataset[, num_names] <- dataset_numeric
-                               }
+                                  }
                                zscore_info       <- list( applied = TRUE)
-                               # zscore_info could contain mean and variance of each column(too bulky)
                                info_$zscore_info <<- zscore_info
+                                }
+                               # zscore_info could contain mean and variance of each column(too bulky)
+                               
                                 return(scaled_dataset)
                               },
                               minMaxNormalize = function(dataset, precomputed,  ...) {

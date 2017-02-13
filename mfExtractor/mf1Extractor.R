@@ -140,15 +140,54 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                            "KurtosisMean",
                                            "KurtosisSTD")
                              features <- features[7:length(features)]
-                             
                              # keep only numeric features
                              file_manipulator <- FileManipulator$new()
                              test_dictionary  <- file_manipulator$loadOrderedDictionary()
                              data_prepare     <- DataPrepare$new(factor_threshold_ = 1)
                              dataset          <- data_prepare$convertAttributeTypes(dataset =  dataset , dictionary = test_dictionary)
-                             variables         <- names(dataset[sapply(dataset,class) != "numeric"])
-                             dataset_num       <-  as.data.frame(dataset[, !(names(dataset) %in% variables)])
-                             if(ncol( dataset_num )!=0) {
+
+                             variables         <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
+                             dataset_num <- dataset[,!(names(dataset) %in% variables)]
+                             variables <- variables[variables != "Class"] 
+                             dataset_cat        <-  as.data.frame(dataset[, (names(dataset) %in% variables)])
+                             if(length(variables) != 0) {
+                               data_prepare <- DataPrepare$new(factor_threshold_ = 0.1)
+                               dataset_cat <- data_prepare$disposeRareLevels(dataset = dataset_cat)
+                               counter <- 0
+                               converted_dataset <- dataset_cat
+                               remove <- c()
+                               for(i in 1:ncol(converted_dataset)) {
+                                 if(is.factor(converted_dataset[,i+counter])){
+                                   temp <- converted_dataset[,i+counter]
+                                   # replace NAs with zeros
+                                   if(NA %in% temp) {
+                                     temp = factor(temp, levels=c(levels(temp), 0))
+                                     temp[is.na(temp)] <- 0
+                                     converted_dataset[,i+counter] <- temp
+                                   }
+                                   if(nlevels((converted_dataset[,i+counter])) <=1 ) {
+                                     converted_dataset[,i + counter] <- NULL
+                                     remove <- c(remove, i+ counter)
+                                     counter <- counter -1
+                                   }
+                                 }
+                               }
+                               if(ncol(converted_dataset)!=0) {
+                                 dmy <- caret::dummyVars(" ~ .", data = converted_dataset)
+                                 trans <- data.frame(predict(dmy, newdata = dataset_cat ))
+                                 if(!is.null(remove)) variables <- variables[-remove]
+                                 dataset_cat <- trans
+                                 dataset <- cbind(dataset_num, dataset_cat)
+                               } else {
+                                 dataset <- dataset_num
+                               }
+                               
+                             } else {
+                               dataset <- dataset_num
+                             }
+                             dataset_num <- dataset
+                             dataset_num$Class <- NULL
+                             # if(ncol( dataset_num )!=0) {
                                inap_remover     <- InapRemover$new()
                                dataset_num          <- inap_remover$removeInfinites(dataset =  dataset_num )
                                dataset_num          <- inap_remover$removeUnknown(dataset =  dataset_num )
@@ -176,11 +215,11 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                values <- list(fractionFor95, firstPCkurt, firstPCskew,  
                                               skew_min, skew_max, skew_mean, skew_std,
                                               kurt_min, kurt_max, kurt_mean, kurt_std   )
-                            } else{
-                              values <- list(fractionFor95 = NA, firstPCkurt= NA, firstPCskew= NA,  
-                                              skew_min= NA, skew_max= NA, skew_mean= NA, skew_std= NA,
-                                              kurt_min= NA, kurt_max= NA, kurt_mean= NA, kurt_std = NA  )
-                            }
+                            # }else{
+                            #   values <- list(fractionFor95 = NA, firstPCkurt= NA, firstPCskew= NA,  
+                            #                   skew_min= NA, skew_max= NA, skew_mean= NA, skew_std= NA,
+                            #                   kurt_min= NA, kurt_max= NA, kurt_mean= NA, kurt_std = NA  )
+                            # }
                             result <- as.data.frame( values, col.names = features)
                              
                            },
