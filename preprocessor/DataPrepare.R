@@ -24,7 +24,7 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                if(factor_threshold_ != 1) {
                                  converted_dataset[, (names(dataset) %in% variables)] <- disposeRareLevels( dataset = factor_dataset)
                                }
-                              
+                               
                                # convert numeric with too few levels to factors
                                factor_dataset              <- lapply(dataset, as.factor)
                                num_files_factor            <- lapply(factor_dataset, nlevels)
@@ -56,11 +56,11 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                      temp[is.na(temp)] <- 0
                                      converted_dataset[,i+counter] <- temp
                                    }
-                                  if(nlevels((converted_dataset[,i+counter])) <=1 ) {
-                                    converted_dataset[,i + counter] <- NULL
-                                    counter <- counter -1
-                                  }
-                                }
+                                   if(nlevels((converted_dataset[,i+counter])) <=1 ) {
+                                     converted_dataset[,i + counter] <- NULL
+                                     counter <- counter -1
+                                   }
+                                 }
                                }
                                converted_dataset$Class  <- factor(converted_dataset$Class, levels = levels(converted_dataset$Class), labels = c("Negative","Positive"))
                                return(converted_dataset)
@@ -71,8 +71,8 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                frequencies       <- apply(dataset, 2, function(x) as.list(table(x)/length(x)))
                                mean_frequencies  <- lapply(frequencies, function(x) mean(x))
                                rare_frequencies  <- 
-                               # factor_threshold_ <<- mean(unlist(mean_frequencies))
-                               rare_frequencies  <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
+                                 # factor_threshold_ <<- mean(unlist(mean_frequencies))
+                                 rare_frequencies  <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
                                #names(rare_frequencies) <-  as.list(lapply(frequencies, function(x) names(which(x < factor_threshold_))))
                                return_dataset    <- as.data.frame(matrix(nrow = nrow(dataset), ncol = 1))
                                # update data_prepare_info with names of compressed_attributes
