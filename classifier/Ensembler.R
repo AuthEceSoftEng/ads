@@ -1,4 +1,4 @@
-##' a generic class, defining the functionality of a classifier
+##' A class responsible for building an ensemble of classification models.
 ##' 
 ##' @include GenericClassifier.R
 ##' @import methods
@@ -22,42 +22,38 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                  ),
                                  methods = list(
                                    evaluateModelContribution = function(models_to_eval){
-                                   'Evaluate contribution of a model to the ensemble as improvement to current performance'
+                                   'Evaluate contribution of a model to the ensemble as improvement to current performance.'
                                      sampled_performances <- list()
-                                     for ( i in c(1:length(models_to_eval))) {
+                                     for (i in c(1:length(models_to_eval))) {
                                        model_to_acc              <- models_to_eval[[i]]
                                        # train model to get binary predictions
                                        predictions               <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
+                                       # train model to get probability predictions
                                        predicted_probs           <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
-                                       # train model to get prob ability predictions
-
                                        performance               <- expert_$getPerformance(as.factor(predictions), actual_class = class_attribute_,
                                                                                            predicted_probs= predicted_probs, performance_metric = performance_metric_)
                                        sampled_performances[[i]] <- performance
-                                   }
-                                   contributions <- unlist(sampled_performances) - performance_
-                                   return(contributions)
-                                 },
+                                     }
+                                     # calculate contribution of each model
+                                     contributions <- unlist(sampled_performances) - performance_
+                                     return(contributions)
+                                   },
                                    initializeEnsemble = function(project_dir, ...){
                                      'Initializes the ensemble with N best ranking models'
                                      N             <- floor(perc_initial_ * classifier_$getNumModels(project_dir = project_dir))
-                                     cat(paste("initial size", N, "\n", sep = " "))
-                                     #rank models by its contribution
+                                     # rank models by its contributions
                                      models        <- classifier_$getModels(project_dir = project_dir)
-                                     #str(models)
-                                     #contributions <- evaluateModelContribution(models_to_eval = models)
                                      contributions <- evaluateModelContribution(models_to_eval = models)
-                                     #cat(contributions)
-                                     # #pick N best models
-                                      initList     <- order(contributions, decreasing = TRUE)[1:N]
-                                      init_models  <- classifier_$getModels(project_dir = project_dir)
-                                      init_models  <- init_models[initList]
-                                      for(i in init_models) {
+                                     # pick N best models
+                                     initList     <- order(contributions, decreasing = TRUE)[1:N]
+                                     init_models  <- classifier_$getModels(project_dir = project_dir)
+                                     init_models  <- init_models[initList]
+                                     for(i in init_models) {
                                         updateEnsemble(i)
                                       }
                                    },
                                    getPerformance = function(...){
-                                     'Returns current accuracy of ensemble'
+                                     'Returns current performance of ensemble'
                                      return(performance_)
                                    },
                                    getIncludedModels = function(...){
@@ -82,60 +78,47 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      initializeEnsemble(project_dir = project_dir)
                                      total_models <- classifier_$getModels(project_dir = project_dir) 
                                      # update info of ensemble
-                                     # ATTENTION: CONNECT p_ WITH SAMPLE 
                                      size_of_sample  <- ceiling(p_ * length(total_models))
-                                     #  for each bootstrap sample
-                                     for ( i in c(1:M_)) {
-                                       cat("iteration")
-                                       cat(i)
-                                       # get sample of all models
-                                       
+                                     # for each bootstrap sample
+                                     for (i in c(1:M_)) {
+                                       # get bootstrap sample of total models
                                        models          <- sample( x = total_models, replace = TRUE, size = size_of_sample)
-                                       cat(paste(length(models),"models to evaluate","\n", sep = " "))
                                        # evaluate contributions
                                        contributions   <- evaluateModelContribution(models_to_eval = models)
-                                       # choose mode with best contribution
+                                       # choose model with best contribution
                                        new_model_index <- which.max(contributions)
                                        new_model       <- models[[new_model_index]]
                                        # update ensemble
                                        updateEnsemble(model = new_model)
-                                       str(performance_)
                                      }
-                                      info_$parameters <<- list( initial_ensemble_size = M_, probability_of_inclusion = p_, size = length(included_models_))
-                                      info_$tuning     <<- list(size = nrow(test_dataset))
-                                      return(included_models_)
+                                     info_$parameters <<- list( initial_ensemble_size = M_, probability_of_inclusion = p_, size = length(included_models_))
+                                     info_$tuning     <<- list(size = nrow(test_dataset))
+                                     return(included_models_)
                                    },
                                    getEnsemblePredictions = function(datasets, type = "prob", project_dir, ...) {
-                                     'Returns  predictions for each model of list'
-                                     models <- classifier_$getModels(project_dir = project_dir) 
+                                     'Returns  predictions for each model of list.'
+                                     # get total models
+                                     models <- classifier_$getModels(project_dir = project_dir)
+                                     # get predicted probabilities
                                      model_probabilities     <- list()
                                      sum_negative            <- rep(0,nrow(datasets[[1]]))
                                      sum_positive            <- rep(0,nrow(datasets[[1]]))
-                                     # brute-force way to initialize sum_model_probabilities and probabilities
-                                     #sum_model_probabilities          <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
-                                     # sum_model_probabilities$Negative <- rep(0,nrow(datasets[[1]]))
-                                     # sum_model_probabilities$Positive <- rep(0,nrow(datasets[[1]]))
-                                     # probabilities                    <- classifier_$predictClassifier(models[[1]], dataset = datasets[[1]], type = "prob")
-                                     # probabilities$Negative           <- rep(0,nrow(datasets[[1]]))
-                                     # probabilities$Positive           <- rep(0,nrow(datasets[[1]]))
                                      sum_model_probabilities <- list()
                                      for(k in seq(1,length(models))) {
                                        datasets[[k]]$Class <- NULL
                                        model <- models[[k]]
                                        model_probabilities[[k]] <- classifier_$predictClassifier(model, dataset = datasets[[k]], type = "prob")
-                                       str(model_probabilities[[k]])
                                        model_probs              <- (model_probabilities[[k]])
-                                       str(model_probs)
                                        sum_negative             <- model_probs[[1]] + sum_negative
                                        sum_positive             <- model_probs[[2]] + sum_positive
 
                                      }
                                      sum_model_probabilities$Negative <- sum_negative/length(models)
                                      sum_model_probabilities$Positive <- sum_positive/length(models)
-                                     str(sum_model_probabilities)
                                      if(type == "prob") {
                                        return(sum_model_probabilities)
                                      } else {
+                                       # convert probabilities to binary predictions
                                        probabilities_negative <- sum_model_probabilities$Negative
                                        indexes                <- which(probabilities_negative > 0.5)
                                        predictions            <- seq(1, length(probabilities_negative))
@@ -165,19 +148,13 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                                                              predicted_probs = probabilities_, performance_metric = performance_metric_)
                                    },
                                    getInfo = function(...) {
-                                     'Returns information about ensemble'
+                                     'Returns information about ensemble.'
                                      return(info_)
                                    },
-                                   savePlots = function(...) {
-                                     'Saves plots describing ensembler'
-                                     # create plot with performance at each ensemble update
-                                     # save plots
-                                   },
                                    compressEnsemble = function(){
-                                     'Converts an ensemble to a deep neural network (size and time compression)'
+                                     'Converts an ensemble to a deep neural network (size and time compression).'
                                    },
                                    initialize=function(...) {
-                                     # !!!initialize probabilities_ as data.frames with labels known from classifier_!!!
                                      test_dataset_  <<- data.frame()
                                      num_models_    <<- 0
                                      perc_initial_  <<- 0.3
