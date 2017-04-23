@@ -1,6 +1,6 @@
 ##' Α class responsible for extracting metafeatures of a dataset
 ##'
-##' Metafeatures include statistical (summation, mean, std, minimum, maximum, kurtosis, skewness)
+##' Metafeatures include statistical (summation, mean, std, minimum, maximum, kurtosis, skewness), information-theoretic, simple and landmarking.
 ##' \@references
 ##' \insertRef{mf1}{mfExtractor}
 ##' @import methods
@@ -31,14 +31,15 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                       sum      <- apply( dataset_numeric, 2, sum, na.rm = TRUE)
                                       mean     <- apply( dataset_numeric, 2, mean, na.rm = TRUE)
                                       std      <- apply( dataset_numeric, 2, sd, na.rm = TRUE)
-                                      #min      <- apply( dataset_numeric, 2, function(x) myMin(x))
-                                      #max      <- apply( dataset_numeric, 2, function(x) myMax(x))
-                                      min      <- apply( dataset_numeric, 2, min, na.rm = TRUE)
-                                      max     <- apply( dataset_numeric, 2, max, na.rm = TRUE)
+                                      min      <- apply( dataset_numeric, 2, function(x) myMin(x))
+                                      max      <- apply( dataset_numeric, 2, function(x) myMax(x))
+                                      #min      <- apply( dataset_numeric, 2, min, na.rm = TRUE)
+                                      #max     <- apply( dataset_numeric, 2, max, na.rm = TRUE)
                                       kurtosis <- apply( dataset_numeric, 2, e1071::kurtosis, na.rm = TRUE)
                                       skewness <- apply( dataset_numeric, 2, e1071::skewness, na.rm = TRUE)
                                       values   <- list(sum, mean, std, min, max, kurtosis, skewness)
                                       result   <- as.data.frame( values, col.names = features)
+                                      View(result)
                                       return(result)
                                     }
                                   },
@@ -115,25 +116,17 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                     'Calculates landmarking features(mention numerical or not)'
                                     # to be included in the future
                                   },
-                                  calculateLandmarking = function(dataset, ...) {
-                                    'Calculates landmarking features(mention numerical or not)'
-                                    # to be included in the future
-                                  },
                                   dummyEncode = function(dataset, ...) {
                                     # keep only numeric feature
                                     file_manipulator <- FileManipulator$new()
                                     test_dictionary  <- file_manipulator$loadOrderedDictionary()
                                     data_prepare     <- DataPrepare$new(factor_threshold_ = 1)
-                                    str(dataset)
                                     dataset          <- data_prepare$convertAttributeTypes(dataset =  dataset , dictionary = test_dictionary)
-                                    str(dataset)
                                     class <- dataset$Class
                                     variables        <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                     dataset_num <- dataset[,!(names(dataset) %in% variables)]
-                                    str(dataset_num)
                                     variables <- variables[variables != "Class"] 
                                     dataset_cat        <-  as.data.frame(dataset[, (names(dataset) %in% variables)])
-                                    str(dataset_cat)
                                     if(length(variables) != 0) {
                                       data_prepare <- DataPrepare$new(factor_threshold_ = 0.1)
                                       dataset_cat <- data_prepare$disposeRareLevels(dataset = dataset_cat)
@@ -213,7 +206,7 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                     
                                     # calclulate skewness metafeatures
                                     skew <- apply(  dataset_num , 2, e1071::skewness, na.rm = TRUE)
-                                    str(skew)
+                                    #str(skew)
                                     skew_min <- min(skew)
                                     skew_max <- max(skew)
                                     skew_mean <- mean(skew)
