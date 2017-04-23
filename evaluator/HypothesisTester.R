@@ -37,7 +37,6 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                         require(ggplot2)
                                         require(reshape2)
                                         perform_profiles <- melt(perform_profiles ,  id.vars = 'x', variable.name = 'algorithm')
-                                        str(perform_profiles$x)
                                         # plot on same grid, each series colored differently -- 
                                         # good if the series have same scale
                                         ggplot(perform_profiles, aes(value, x)) + geom_line(aes(colour = algorithm)) +
@@ -49,9 +48,6 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                                                        "wilcoxon", "mcnemar"), conf.level, ... ) {
                                         'Returns tests included in methods. Available tests include
                                         hypothesis testing techniques on 1-way, 2-way and 3-way contigency tables'
-                                        cat(conf.level)
-                                        cat("printed conf \n")
-                                        # arguments for external functions are going to be passed through ...
                                         test_results <- list()
                                         # 1-way
                                         if("chi-squared" %in% methods) {
@@ -73,16 +69,9 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                           friedman_results <- matrix(friedman_vector, nrow = num_files, byrow = FALSE, dimnames =  list(1:num_files, names(results)))
                                           friedman_test <-friedman.test(friedman_results, conf.level = conf.level)
                                           test_results[["test_result"]] <- friedman_test
-                                          # post-hoc analysis to find pairs of significantly differing algorithms
-                                          # friedman_post_hoc <- friedman.test.with.post.hoc(formula, data)
-                                          # test_results[[friedman_post_hoc]] <- friedman_post_hoc
-                                          # # replacing F-chisquared with F-statistic according to Iman and Davenport
-                                          # friedman_test_alt <- alternativeFriedman(original_friedman = friedman_test, N = nrow(data), k = (ncol(data)-1))
-                                          #test_results[[friedman_test_alt]] <- friedman_test_alt
                                         }
                                         if("fisher" %in% methods) {
                                           # x and y are row vectors with same length
-
                                           fisher_test <- stats::fisher.test(x, y,  conf.level = conf.level)
                                           test_results[["test_result"]] <- fisher_test
                                         }
@@ -126,15 +115,12 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                         'Function taken from https://www.r-statistics.com/tag/friedman-test/'
                                         # formu is a formula of the shape: 	Y ~ X | block
                                         # data is a long data.frame with three columns:    [[ Y (numeric), X (factor), block (factor) ]]
-                                        
                                         # Note: This function doesn't handle NA's! In case of NA in Y in one of the blocks, then that entire block should be removed.
-                                        
                                         # get the names out of the formula
                                         formu.names <- all.vars(formu)
                                         Y.name <- formu.names[1]
                                         X.name <- formu.names[2]
                                         block.name <- formu.names[3]
-                                        
                                         if(dim(data)[2] >3) data <- data[,c(Y.name,X.name,block.name)]	# In case we have a "data" data frame with more then the three columns we need. This code will clean it from them...
                                         
                                         # Note: the function doesn't handle NA's. In case of NA in one of the block T outcomes, that entire block should be removed.
@@ -155,16 +141,12 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                                                       ytrafo = function(Y.data){ trafo(Y.data, numeric_trafo = rank, block = data[,block.name] ) }
                                         )
                                         # if(to.print.friedman) { print(the.sym.test) }
-                                        
-                                        
                                         if(to.post.hoc.if.signif)
                                         {
                                           if(pvalue(the.sym.test) < signif.P)
                                           {
                                             # the post hoc test
                                             The.post.hoc.P.values <- pvalue(the.sym.test, method = "single-step")	# this is the post hoc of the friedman test
-                                            
-                                            
                                             # plotting
                                             if(to.plot.parallel & to.plot.boxplot)	par(mfrow = c(1,2)) # if we are plotting two plots, let's make sure we'll be able to see both
                                             
@@ -180,7 +162,6 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                               } else {
                                                 blocks.col <- 1 # black
                                               }
-                                              
                                               data2 <- data
                                               if(jitter.Y.in.cor.plot) {
                                                 data2[,Y.name] <- jitter(data2[,Y.name])
@@ -188,7 +169,6 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                               } else {
                                                 par.cor.plot.text <- "Parallel coordinates plot"
                                               }
-                                              
                                               # adding a Parallel coordinates plot
                                               matplot(as.matrix(reshape(data2,  idvar=X.name, timevar=block.name,
                                                                         direction="wide")[,-1])  ,
@@ -200,7 +180,6 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                               axis(2) # plot Y axis
                                               points(tapply(data[,Y.name], data[,X.name], median) ~ X.for.plot, col = "red",pch = 4, cex = 2, lwd = 5)
                                             }
-                                            
                                             if(to.plot.boxplot)
                                             {
                                               # first we create a function to create a new Y, by substracting different combinations of X levels from each other.
@@ -208,19 +187,15 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                               {
                                                 the.data[,a.b[2]] - the.data[,a.b[1]]
                                               }
-                                              
                                               temp.wide <- reshape(data,  idvar=X.name, timevar=block.name,
                                                                    direction="wide") 	#[,-1]
                                               wide.data <- as.matrix(t(temp.wide[,-1]))
                                               colnames(wide.data) <- temp.wide[,1]
-                                              
                                               Y.b.minus.a.combos <- apply(with(data,combn(levels(data[,X.name]), 2)), 2, subtract.a.from.b, the.data =wide.data)
                                               names.b.minus.a.combos <- apply(with(data,combn(levels(data[,X.name]), 2)), 2, function(a.b) {paste(a.b[2],a.b[1],sep=" - ")})
-                                              
                                               the.ylim <- range(Y.b.minus.a.combos)
                                               the.ylim[2] <- the.ylim[2] + max(sd(Y.b.minus.a.combos))	# adding some space for the labels
                                               is.signif.color <- ifelse(The.post.hoc.P.values < .05 , "green", "grey")
-                                              
                                               boxplot(Y.b.minus.a.combos,
                                                       names = names.b.minus.a.combos ,
                                                       col = is.signif.color,
@@ -229,13 +204,10 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                               )
                                               legend("topright", legend = paste(names.b.minus.a.combos, rep(" ; PostHoc P.value:", number.of.X.levels),round(The.post.hoc.P.values,5)) , fill =  is.signif.color )
                                               abline(h = 0, col = "blue")
-                                              
                                             }
-                                            
                                             list.to.return <- list(Friedman.Test = the.sym.test, PostHoc.Test = The.post.hoc.P.values)
                                             if(to.print.friedman) {print(list.to.return)}
                                             return(list.to.return)
-                                            
                                           }	else {
                                             print("The results where not significant, There is no need for a post hoc test")
                                             return(the.sym.test)
