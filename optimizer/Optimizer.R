@@ -4,7 +4,8 @@
 ##' @export
 Optimizer <- setRefClass(Class = "Optimizer",
                           fields = list(
-                            knn_model_k_      = "character",
+                            model_file_        = "character",
+                            parameters_file_   = "character",
                             file_manipulator_ = "FileManipulator",
                             algorithm_        = "character",
                             tree_model_cp_    = "character"
@@ -13,16 +14,13 @@ Optimizer <- setRefClass(Class = "Optimizer",
                             optimizeHParamDefault = function(metafeature_dataset, algorithm,  ...) {
                               'Returns the list of optimal parameters for a specific machine learning algorithm and classification dataset.'
                               if(algorithm == "SvmClassifier") {
-                                # load HPP model
-                                # predict hyperparameters
-                                # dummy values for testing
                                 opt_parameters <- list(C = 1, sigma = 0.0001 )
                               }
                               else if(algorithm == "KnnClassifier") {
                                 opt_parameters <- list(k = 1)
                               }
                               else if(algorithm == "TreeClassifier") {
-                                opt_parameters <- list(maxdepth = 5, nu = 0.0001, iter =100 )
+                                opt_parameters <- list(cp=0.5 )
                               }
                               else if(algorithm == "AnnClassifier") {
                                 opt_parameters <- list(size = 1, decay = 0.0001 )
@@ -32,120 +30,78 @@ Optimizer <- setRefClass(Class = "Optimizer",
                               }
                               return(opt_parameters)
                             },
-                            optimizeHParam= function( algorithm, metafeatures,  ...) {
+                            optimizeHParam= function( algorithm, parameters,  metafeatures,  ...) {
                               'Returns a list of optimized hyperparameters'
                                 algorithm_                  <<- algorithm
                                 # get one predicted value for each parameter of algorithm
-                                optimal_predictions         <- getModelPredictions(metafeatures)
-                                # get prediction intervals of model
-                                optimal_predictions_list    <- getPredictionIntervals(parameters = optimal_predictions,metafeatures)
+                                optimal_predictions_list         <- getModelPredictions(metafeatures, parameters)
                                 return(optimal_predictions_list)
                             },
-                            getPredictionIntervals = function(parameters, metafeatures, ...) {
-                              'Returns a matrix with lower and upper confidence bounds for each parameter of model'
-                              intervals_list  <- list()
+                            getModelPredictions = function(metafeatures, parameters, ...) {
+                              'Returns optimal hyperparameters predicted by HPP model.'
                               parameters_list <- list()
-                              model_info <- file_manipulator_$loadModelInfo(name = paste(algorithm_, "parameters.csv", sep = "/") )
-                              #str(parameters)
-                              for (i in 1:length(parameters$hyperparameters)) {
-                                
-                                if(algorithm_ == "SvmClassifier") {
-                                  
+                                for(i in 1:length(parameters)) {
+                                  p <- parameters[i]
+                                  model          <- file_manipulator_$loadHppModel(name = paste(algorithm_, p, model_file_, sep = "/"))
+                                  model_info <- file_manipulator_$loadModelInfo(name = paste(algorithm_, p, parameters_file_, sep = "/") )
+                                  metafeatures_chosen <- metafeatures[,names(metafeatures) %in% model_info$metafeatures ]
+                                  metafeatures_chosen <- scale(metafeatures_chosen, center = model_info$means, scale = model_info$scales)
+                                  optimal_p      <- predict(model, metafeatures_chosen)
+                                  prediction <- boot_pi(model = model, pdata = metafeatures_chosen, n = model_info$n_boot[1],
+                                                         p =model_info$percentage[1], enableLog = model_info$enableLog[1])
+                                  interval <- prediction[,c(2, 3)]
+                                  str(model_info$step[1])
+                                  str(prediction)
+                                  parameter_vector <- seq((unlist(interval[1])),unlist(interval[2]),model_info$step[1])
+                                  parameters_list[[p]] <- parameter_vector
                                 }
-                                else if(algorithm_ == "KnnClassifier") {
-                                  trans <- model_info$Trans
-                                  # load appropriate model
-                                  predictions_with_confidence <- parameters$hyperparameters$k
-                                  predictions_with_confidence[predictions_with_confidence < 0] <- 0.0001
-                                  (predictions_with_confidence)
-                                  if(trans==0){
-                                    predictions_with_confidence[,"fit"] <- round(log(predictions_with_confidence[,"fit"]))
-                                    predictions_with_confidence[,"lwr"] <- round(log(predictions_with_confidence[,"lwr"]))
-                                    predictions_with_confidence[,"upr"] <- round(log(predictions_with_confidence[,"upr"]))
-                                  }else{
-                                    predictions_with_confidence[,"fit"] <- round((predictions_with_confidence[,"fit"]*trans +1)^(1/trans))
-                                    predictions_with_confidence[,"lwr"] <- round((predictions_with_confidence[,"lwr"]*trans +1)^(1/trans))
-                                    predictions_with_confidence[,"upr"] <- round((predictions_with_confidence[,"upr"]*trans +1)^(1/trans))
-                                    
-                                  }                                                                          
-                                                                                   
-                                  # n                <- model_info$Training_examples
-                                  # s                <- model_info$Sd_Residuals
-                                  # a                <- predictions
-                                  # error            <- qnorm(0.975)*s/sqrt(n)
-                                  # left             <- predictions - error
-                                  # right            <- predictions + error
-                                  # lwr              <- left 
-                                  # upr              <- right
-                                  # intervals        <- matrix(c(lwr, upr), nrow = nrow(metafeatures), ncol = 2 , byrow = FALSE)
-                                  interval <- predictions_with_confidence[,c("lwr", "upr")]
-                                  parameter_vector <- seq(round(interval[1]),round(interval[2]),1)
-                                  
-                                }
-                                else if(algorithm_ == "TreeClassifier") {
-                                  prediction <- parameters$hyperparameters$cp
-                                  resid_median <- model_info$Laplace_median
-                                  pivot_quarts <- c(model_info$W_low, model_info$W_high)
-                                  # get prediction intervals  from pivot quartiles
-                                  predict_quants <- lapply(prediction, function(prediction) {
-                                    return(c(resid_median - pivot_quarts[2]*abs(prediction - resid_median), resid_median - pivot_quarts[1]*abs(prediction - resid_median)))
-                                  }
-                                  )
-                                  lwr <- lapply(predict_quants, function(x) {
-                                    return(x[1])
-                                  })
-                                  
-                                  upr <- lapply(predict_quants, function(x) {
-                                    return(x[2])
-                                  })
-                                  for_matrix <- c(prediction, lwr, upr )
-                                  predictions_with_confidence <- matrix(for_matrix, nrow = nrow(metafeatures), ncol = 3 , byrow = FALSE)
-                                  dimnames(predictions_with_confidence) = list( paste("dataset_", seq(1,nrow(metafeatures)), sep = ""),
-                                                                                c("fit", "lwr", "upr")) # column names 
-                                  interval <- predictions_with_confidence[,c("lwr", "upr")]
-                                  parameter_vector <- seq((unlist(interval[1])),unlist(interval[2]),0.1)
-                                }
-                                else if(algorithm_ == "AnnClassifier") {
-                                }
-                                else if(algorithm_ == "BayesClassifier") {
-                                }
-                                intervals_list[[i]]  <- interval
-                                parameters_list[[(names(parameters$hyperparameters)[[i]])]] <- parameter_vector
-                              }
-                              return(parameters_list)
+                                return(parameters_list)
                             },
-                            getModelPredictions = function(metafeatures, ...) {
-                              'Returns optimal hyperparameters predicted by model'
-                              if(algorithm_ == "SvmClassifier") {
-                                
+                            boot_pi = function(model, pdata, n, p, enableLog = TRUE) { 
+                              registerDoParallel(cores = 4)
+                              params_list <- list()
+                              params <- names(model$bestTune)
+                              x<- params[1]
+                              optParameters <- data.frame( param= 2)
+                              if(length(params)>1) {
+                                for(i in 2:length(params)) {
+                                  optParameters <- cbind(optParameters, data.frame( temp = model$bestTune[params[i]])) 
+                                }
                               }
-                              else if(algorithm_ == "KnnClassifier") {
-                                
-                                # load appropriate model
-                                model_k                           <- file_manipulator_$loadHppModel(name = paste(algorithm_, knn_model_k_, sep = "/"))
-                                metafeatures[is.na(metafeatures)] <- 0
-                                #str(model_k)
-                                optimal_k      <- predict(model_k$finalModel, metafeatures, interval = "prediction", level = 0.5)
-                                # make predictions
-                                opt_parameters <- list( hyperparameters= list(k = optimal_k), model = model_k) 
+                              names(optParameters) <- params
+                              odata <- model$trainingData
+                              lp <- (1 - p) / 2
+                              up <- 1 - lp
+                              set.seed(1)
+                              seeds <- round(runif(n, 1, 1000), 0)
+                              boot_y <- foreach(i = 1:n, .combine = rbind) %dopar% {
+                                set.seed(seeds[i])
+                                bdata <- odata[sample(seq(nrow(odata)), size = nrow(odata), replace = TRUE), ]
+                                if(enableLog) {
+                                  model <- caret::train(log10(.outcome)~ ., data = bdata,
+                                                        method = model$method,
+                                                        tuneGrid = optParameters,
+                                                        trControl=trainControl(method="none"))
+                                  bpred <- predict(model, newdata = pdata)
+                                  bpred <-10^bpred
+                                } else {
+                                  bpred <- predict(model, newdata = pdata)
+                                  bpred <-bpred
+                                }
+                                bpred
                               }
-                              else if(algorithm_ == "TreeClassifier") {
-                                model_cp        <- file_manipulator_$loadHppModel(name = paste(algorithm_, tree_model_cp_, sep = "/"))
-                                metafeatures[is.na(metafeatures)] <- 0
-                                optimal_cp      <-  kernlab::predict(model_cp, metafeatures) 
-                                # make predictions
-                                opt_parameters  <- list( hyperparameters= list(cp = optimal_cp), model = model_cp)
+                              boot_ci <- t(apply(boot_y, 2, quantile, c(lp, up))) 
+                              if(enableLog) { 
+                                predicted <- 10^predict(model, newdata = pdata)
                               }
-                              else if(algorithm_ == "AnnClassifier") {
+                              else {
+                                predicted <- predict(model, newdata = pdata)
                               }
-                              else if(algorithm_ == "BayesClassifier") {
-                              }
-                              return(opt_parameters)
-                              
+                              return(data.frame(pred = predicted, lower = boot_ci[, 1] , upper = boot_ci[, 2] ))
                             },
                               initialize = function(...) {
-                                knn_model_k_      <<- "lm_predicts_k.Rdata"
-                                tree_model_cp_    <<- "ksvm_predicts_cp.Rdata"
+                                model_file_        <<- "model.RData"
+                                parameters_file_   <<- "parameters.csv"
                                 file_manipulator_ <<- FileManipulator$new()
                                 algorithm_        <<- ""
                                 callSuper(...)
