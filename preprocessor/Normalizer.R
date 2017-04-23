@@ -1,5 +1,6 @@
-##' Α class responsible for normalizing the attributes of a dataset
+##' Α class responsible for normalizing the features of a dataset.
 ##'
+##' Zscore and min-max normalization are supported.
 ##' @import methods
 ##' @export
 Normalizer <- setRefClass(Class = "Normalizer",
@@ -32,7 +33,6 @@ Normalizer <- setRefClass(Class = "Normalizer",
                                 info_$zscore_info <<- zscore_info
                               }
                               # zscore_info could contain mean and variance of each column(too bulky)
-                              
                               return(scaled_dataset)
                             },
                             minMaxNormalize = function(dataset, precomputed,  ...) {
@@ -42,7 +42,8 @@ Normalizer <- setRefClass(Class = "Normalizer",
                               scaled_dataset <- dataset
                               if(precomputed == c("min","max")) {
                                 scaled_dataset[, !(names(dataset) %in% variables)] <- sapply(num_names,
-                                                                                             function(col) { (dataset[,col] - min(dataset[,col]))/(max(dataset[,col])-min(dataset[,col])) })
+                                                                                             function(col) {
+                                                                                               (dataset[,col] - min(dataset[,col]))/(max(dataset[,col])-min(dataset[,col])) })
                                 min_list <- as.list(sapply(num_names, function(col)  min(dataset[,col]) ))
                                 max_list <- as.list(sapply(num_names, function(col)  max(dataset[,col]) ))
                                 minmax_attributes_ <<- list(min_of_columns = min_list, max_of_columns = max_list)

@@ -1,6 +1,5 @@
 ##' Α class responsible for performing PCA and MDA analysis on a dataset.
 ##'
-##' DataCompressor uses package caret to find PCA features which maintain the desired variance.
 ##' @import methods caret
 ##' @export
 DataCompressor <- setRefClass(Class = "DataCompressor",
@@ -20,8 +19,7 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                   num_dataset$Class <- NULL
                                   # apply PCA
                                   if(ncol(num_dataset) != 0) {
-                                    pre.total_data      <- predict.preProcess(num_dataset, 
-                                                                              method=c(),newdata=num_dataset)
+                                    pre.total_data      <- num_dataset
                                     PCA                 <- prcomp(pre.total_data)
                                     if(num_pca_attributes_ == 0) {
                                       keep                <- (which(cumsum((PCA$sdev)^2) / sum(PCA$sdev^2)>=variance)[1])
@@ -53,15 +51,10 @@ DataCompressor <- setRefClass(Class = "DataCompressor",
                                   else {
                                     trans_dataset    <- dataset
                                   }
-                                  # reappend Class
                                   trans_dataset$Class <- dataset$Class
-                                  
-                                  
                                   return((trans_dataset))
                                 },
                                 performMDA = function(dataset,variance = 0.95, number_of_attributes = NULL, ...) {
-                                  library(FactoMineR)
-                                  library(MASS)
                                   # prepare for MDA
                                   variables           <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
                                   cat_dataset         <-  dataset[, (names(dataset) %in% variables)]

@@ -1,6 +1,6 @@
 ##' Α class responsible for removing inappropriate values from a dataset.
 ##'
-##' As potential inappropriate values we consider unknown entries and outliers, which we treat accordingly
+##' As potential inappropriate values we consider unknown entries and outliers, which we treat accordingly.
 ##' @import methods
 ##' @export
 InapRemover <- setRefClass(Class = "InapRemover",
@@ -25,9 +25,6 @@ InapRemover <- setRefClass(Class = "InapRemover",
                              removeInfinites = function(dataset, inf_action = list( act= "delete", rep_pos = 1, rep_neg = 0),...) {
                                'Replace +Inf with and -Inf with desired values'
                                dataset_treated <- dataset
-                               #inf_info        <- list( number_positive = sum((dataset_treated[dataset_treated =="Inf"])),
-                               #                         number_negative = sum((dataset_treated[dataset_treated =="-Inf"])), technique = inf_action$act)
-                               #info_$Infs      <<- inf_info
                                if(inf_action$act == "delete") {
                                  inf_action$rep_neg <- NA
                                  inf_action$rep_pos <- NA

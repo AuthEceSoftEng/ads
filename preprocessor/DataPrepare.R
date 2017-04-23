@@ -1,6 +1,6 @@
-
-##' A class responsible cleaning a dataset after its loading.
+##' A class responsible for cleaning a dataset..
 ##'
+##' Cleaning includes conversion to appropriate features types and disposal of rare-levels for categorical features.
 ##' @include Server.R
 ##' @export Cleaner
 DataPrepare <- setRefClass(Class = "DataPrepare",
@@ -24,7 +24,6 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                                if(factor_threshold_ != 1) {
                                  converted_dataset[, (names(dataset) %in% variables)] <- disposeRareLevels( dataset = factor_dataset)
                                }
-                               
                                # convert numeric with too few levels to factors
                                factor_dataset              <- lapply(dataset, as.factor)
                                num_files_factor            <- lapply(factor_dataset, nlevels)
@@ -67,12 +66,9 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                              },
                              disposeRareLevels = function(dataset,  ... ) {
                                'Finds rare levels in categorical attributes and reassigns them to a new level'
-                               library(plyr)
                                frequencies       <- apply(dataset, 2, function(x) as.list(table(x)/length(x)))
                                mean_frequencies  <- lapply(frequencies, function(x) mean(x))
-                               rare_frequencies  <- 
-                                 # factor_threshold_ <<- mean(unlist(mean_frequencies))
-                                 rare_frequencies  <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
+                               rare_frequencies  <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
                                #names(rare_frequencies) <-  as.list(lapply(frequencies, function(x) names(which(x < factor_threshold_))))
                                return_dataset    <- as.data.frame(matrix(nrow = nrow(dataset), ncol = 1))
                                # update data_prepare_info with names of compressed_attributes

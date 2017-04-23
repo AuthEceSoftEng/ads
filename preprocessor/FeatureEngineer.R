@@ -15,23 +15,6 @@ FeatureEngineer <- setRefClass(Class = "FeatureEngineer",
                              info_ = "list"
                            ),
                            methods = list(
-                             classifyDataset = function(dataset, ...) {
-                               'Classifies dataset in order to match it with the right heuristic
-                               (= feature transformation function)'
-                               # needs thought
-                               return(dataset_class)
-                             },
-                             findFeatures = function(dataset, transformation, ...) {
-                               'After Heuristics DB returns the transformation function, it is performed
-                               on the dataset to generate the new features.'
-                               # classify dataset (alternatively calculate some "quality measures" =
-                               # replace classification with heuristic)
-                               dataset_class       <- classifyDataset(dataset)
-                               # query to DB that contains class of dataset
-                               # apply tranformation function
-                               transformed_dataset <- dataset
-                               return(transformed_dataset)
-                             },
                              findOptimalBoxCoxTransform = function(train_dataset, ...) {
                                'Returns optimal parameter lambda of boxcox transformation for a given formula'
                                bc           <- boxcox(Class ~ ., data = train_dataset, plotit = FALSE)
