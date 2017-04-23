@@ -1,4 +1,3 @@
-
 ##' A class responsible for initiating the experiment, by parsing the user's command and delegating 
 ##' responsibilities to a server object.
 ##'
@@ -14,7 +13,7 @@ InputParser <- setRefClass(Class = "InputParser",
                                ),
                                methods = list(
                                  parseCommand = function(options, ...) {
-                                   'Converts a string from the user to commands.'
+                                   'Converts the command-line arguments provided by a user to commands for Server.'
                                    dataset_file_ <<- options$dataset
                                    if(is.null(options$project)) {
                                       dataset_name  <- substr(dataset_file_, start = 1, stop = nchar(dataset_file_) -4 )

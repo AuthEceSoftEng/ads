@@ -25,7 +25,6 @@ Server <- setRefClass(Class = "Server",
                           return(directories_[field])
                         },
                         createProject = function(dataset_name, project_name, workspace_dir ) {
-                          #options(expressions = 10000)
                           'Creates the directory of current project'
                           # get ADS_workspace full-path from log.xml (or ADS.R)
                           # create project directory 
@@ -74,7 +73,7 @@ Server <- setRefClass(Class = "Server",
                             # -------- preprocess, tune and train a model for each classifier --------
                             for(classifier in algorithms) {
                               expert               <- Expert$new()
-                              algorithm            <- list(algorithm = class(classifier)[1])
+                              algorithm            <- list(algorithm = class(classifier)[1], parameters = classifier$getModelParameters())
                               task$algorithm       <- algorithm
                               preprocessed_dataset <- expert$choosePreprocessing(train_dataset, task)
                               model_name           <- classifier$getModelName()
@@ -84,22 +83,25 @@ Server <- setRefClass(Class = "Server",
                               stored_experts[[model_name]]            <- expert
                               # find metafeatures for parameter tuning
                               # there is the possibility of different metafeatures for each algorithm
-                              metafeature_dataset <- mf2_extractor_$get2MetaFeatures(preprocessed_dataset, choice = "autosklearn")
+                              metafeature_dataset <- mf2_extractor_$get2MetaFeatures(preprocessed_dataset)
+                              cat("print metafeature_dataset")
+                              str(metafeature_dataset)
                               # predict optimal hyperparameters
                               opt_params <- apply(as.data.frame(metafeature_dataset), 1, function(x) {
                                 example  <- matrix(x, nrow=1, ncol=ncol(metafeature_dataset), byrow=TRUE)
                                 example  <- data.frame(example)
                                 colnames(example) = names(metafeature_dataset)
-                                optimizer_$optimizeHParam(algorithm  = algorithm$algorithm, metafeatures = example)})
+                                cat("print example")
+                                str(example)
+                                optimizer_$optimizeHParam(algorithm  = algorithm$algorithm, parameters = algorithm$parameters, metafeatures = example)})
                               # ATTENTION: IF OPT_PARAMS INCLUDES MORE THAN ONE COMBINATION OF PARAMETERS I HAVE TO CONSIDER ALL MODELS AND APPEND TO MODEL_NAME
                               stored_opt_parameters[[model_name]] <- opt_params
                               # train optimized model by calling each classifier's trainModel and save it under project's directory
                               val_partitions        <- data_prepare_$partitionData(preprocessed_dataset, technique = list(name = "holdout", ratio = 0.9))
                               training_dataset      <- preprocessed_dataset[val_partitions[,1], ]
                               ensemble_test_dataset <- preprocessed_dataset[-val_partitions[,1], ]
-                              models                <- classifier$trainModel(training_dataset = training_dataset, parameters = opt_params,
+                              classifier$trainModel(training_dataset = training_dataset, parameters = opt_params,
                                                                              file_manipulator = file_manipulator_)
-                              #lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
                             }
                             # tune ensemble
                             ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
@@ -183,8 +185,6 @@ Server <- setRefClass(Class = "Server",
                               model$performance_metric <- model_performances[k]
                               models[[m]] <- model
                             }
-                            
-                            # models              <- lapply(models, function(x) x$performance_metric <- model_performances[k])
                             lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
                             final_datasets[[k]] <- processed_dataset 
                           }
@@ -272,7 +272,6 @@ Server <- setRefClass(Class = "Server",
                             str(model_info$performance)
                             experiment_info[[paste("model_", i, sep = "")]] <- list(model_info = model_info)
                           }
-                          
                           # gather ensemble info
                           experiment_info$ensemble             <- ensembler_$getInfo()
                           experiment_info$ensemble$performance <- performance

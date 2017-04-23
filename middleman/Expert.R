@@ -1,7 +1,6 @@
-##' Α class responsible for taking decisions during the experiment, substituting a real-life expert .
+##' Α class responsible for taking decisions during the experiment, substituting a real-life expert.
 ##'
-##' Expert communicates with the Knowledge DB, which, based on heuristics, answers queries regarding the
-##' preprocessing of a dataset.
+##' Expert, based on heuristics, answers takes decisions about preprocessing of a dataset and evaluation of a machine learning model.
 ##'
 ##' @import methods
 ##' @exportClass Expert
@@ -19,27 +18,13 @@ Expert <- setRefClass(Class = "Expert",
                         conf_level_              = "numeric"
                       ),
                       methods = list(
-                        # formQuery = function(request, ...) {
-                        #   'Based on the request( a list object, whith fields describing the question
-                        #   towards the database) a query (string) is formed.'
-                        #   # to be completed after design of database
-                        # },
-                        # askKnowledgeDB = function(request, ...) {
-                        #   'Communicates with Knowledge DB '
-                        #   # form desired query
-                        #   formQuery(request)
-                        #   # locate database
-                        #   # set up connection with database
-                        #   # get response
-                        #   return(response)
-                        # },
                         choosePerformanceMetric = function(model_name, dataset, ...) {
                           'Chooses appropriate performance metric according to heuristics'
                           performance_metric <- "Accuracy"
                           return(performance_metric)
                         },
                         processTask = function(task, ...) {
-                          'Checks fields of task to extract information about appropriate preprocessing techniques'
+                          'Checks fields of task to extract information about appropriate preprocessing techniques.'
                           processed_task_ <<- list()
                           if(!is.null(task$algorithm)) {
                             if(task$algorithm == "NN") {
@@ -94,7 +79,6 @@ Expert <- setRefClass(Class = "Expert",
                           if(method == "zscore") {
                             dataset                                     <- normalizer_$zscoreNormalize(dataset, precomputed = c("std","mean"))
                             processed_task_$preprocess$normalize$zscore <<- normalizer_$getZscoreAttributes()
-                            
                           } 
                           else if(method == "minmax") {
                             dataset                                     <- normalizer_$minMaxNormalize(dataset, precomputed = c("min","max"))
@@ -129,10 +113,6 @@ Expert <- setRefClass(Class = "Expert",
                         applyPreprocessing = function(dataset, ...) {
                           'Applies preprocessing to dataset based on info in preprocessing_procedure_'
                           # retrieve info from preprocessing_procedure_ and apply it
-                          # preprocessed_dataset <- dataset
-                          # WARNING: temporary for testing, task should not be an argument
-                          #preprocessed_dataset <- choosePreprocessing(dataset, task)
-                          #return(preprocessed_dataset)
                           applied_dataset <- dataset
                           preprocess_task <- processed_task_$preprocess
                           if(!is.null(preprocess_task$inapproriate)) {
