@@ -27,9 +27,7 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                     }
                                     else {
                                       statFeatsNumeric <- mf1_extractor_$calculateStatisticalNumeric(dataset)
-                                      View(statFeatsNumeric)
                                       statFeatsNumeric <- unlist(statFeatsNumeric)
-                                      str(statFeatsNumeric)
                                       result           <-as.data.frame(t(statFeatsNumeric))
                                     }
                                     names(result) <- m2_features

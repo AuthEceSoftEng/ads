@@ -80,7 +80,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      # update info of ensemble
                                      size_of_sample  <- ceiling(p_ * length(total_models))
                                      # for each bootstrap sample
-                                     for (i in c(1:M_)) {
+                                     for (i in c(1:(M_-size_of_sample))) {
                                        # get bootstrap sample of total models
                                        models          <- sample( x = total_models, replace = TRUE, size = size_of_sample)
                                        # evaluate contributions
@@ -157,8 +157,8 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    initialize=function(...) {
                                      test_dataset_  <<- data.frame()
                                      num_models_    <<- 0
-                                     perc_initial_  <<- 0.3
-                                     M_             <<- 5
+                                     perc_initial_  <<- 0.01
+                                     M_             <<- 50
                                      p_             <<- 0.5
                                      classifier_    <<- GenericClassifier$new()
                                      expert_        <<- Expert$new()

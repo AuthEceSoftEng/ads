@@ -39,7 +39,6 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                       skewness <- apply( dataset_numeric, 2, e1071::skewness, na.rm = TRUE)
                                       values   <- list(sum, mean, std, min, max, kurtosis, skewness)
                                       result   <- as.data.frame( values, col.names = features)
-                                      View(result)
                                       return(result)
                                     }
                                   },
@@ -206,7 +205,6 @@ mf1Extractor <- setRefClass(Class = "mf1Extractor",
                                     
                                     # calclulate skewness metafeatures
                                     skew <- apply(  dataset_num , 2, e1071::skewness, na.rm = TRUE)
-                                    #str(skew)
                                     skew_min <- min(skew)
                                     skew_max <- max(skew)
                                     skew_mean <- mean(skew)

@@ -49,9 +49,10 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                   optimal_p      <- predict(model, metafeatures_chosen)
                                   prediction <- boot_pi(model = model, pdata = metafeatures_chosen, n = model_info$n_boot[1],
                                                          p =model_info$percentage[1], enableLog = model_info$enableLog[1])
-                                  interval <- prediction[,c(2, 3)]
-                                  str(model_info$step[1])
-                                  str(prediction)
+                                  if(model_info$count) {
+                                    prediction <- round(prediction)
+                                  }
+                                    interval <- prediction[,c(2, 3)]
                                   parameter_vector <- seq((unlist(interval[1])),unlist(interval[2]),model_info$step[1])
                                   parameters_list[[p]] <- parameter_vector
                                 }
@@ -78,14 +79,18 @@ Optimizer <- setRefClass(Class = "Optimizer",
                                 set.seed(seeds[i])
                                 bdata <- odata[sample(seq(nrow(odata)), size = nrow(odata), replace = TRUE), ]
                                 if(enableLog) {
-                                  model <- caret::train(log10(.outcome)~ ., data = bdata,
+                                  model_current <- caret::train(log10(.outcome)~ ., data = bdata,
                                                         method = model$method,
                                                         tuneGrid = optParameters,
                                                         trControl=trainControl(method="none"))
-                                  bpred <- predict(model, newdata = pdata)
+                                  bpred <- predict(model_current, newdata = pdata)
                                   bpred <-10^bpred
                                 } else {
-                                  bpred <- predict(model, newdata = pdata)
+                                  model_current <- caret::train(.outcome~ ., data = bdata,
+                                                        method = model$method,
+                                                        tuneGrid = optParameters,
+                                                        trControl=trainControl(method="none"))
+                                  bpred <- predict(model_current, newdata = pdata)
                                   bpred <-bpred
                                 }
                                 bpred

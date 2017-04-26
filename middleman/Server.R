@@ -59,6 +59,8 @@ Server <- setRefClass(Class = "Server",
                           task       <- list()
                           # create training and testing partitions
                           partitions <- data_prepare_$partitionData(dataset, technique = testing_technique_)
+                          ensemble_models_total <- list()
+                          ensemble_performance <- list()
                           for(i in seq(1, ncol(partitions))) {
                             train_indexes   <- partitions[,i]
                             train_dataset   <- dataset[train_indexes, ]
@@ -84,17 +86,13 @@ Server <- setRefClass(Class = "Server",
                               # find metafeatures for parameter tuning
                               # there is the possibility of different metafeatures for each algorithm
                               metafeature_dataset <- mf2_extractor_$get2MetaFeatures(preprocessed_dataset)
-                              cat("print metafeature_dataset")
-                              str(metafeature_dataset)
                               # predict optimal hyperparameters
                               opt_params <- apply(as.data.frame(metafeature_dataset), 1, function(x) {
                                 example  <- matrix(x, nrow=1, ncol=ncol(metafeature_dataset), byrow=TRUE)
                                 example  <- data.frame(example)
                                 colnames(example) = names(metafeature_dataset)
-                                cat("print example")
-                                str(example)
-                                optimizer_$optimizeHParam(algorithm  = algorithm$algorithm, parameters = algorithm$parameters, metafeatures = example)})
-                              # ATTENTION: IF OPT_PARAMS INCLUDES MORE THAN ONE COMBINATION OF PARAMETERS I HAVE TO CONSIDER ALL MODELS AND APPEND TO MODEL_NAME
+                                opt_params <- optimizer_$optimizeHParam(algorithm  = algorithm$algorithm, parameters = algorithm$parameters, metafeatures = example)})
+                             # ATTENTION: IF OPT_PARAMS INCLUDES MORE THAN ONE COMBINATION OF PARAMETERS I HAVE TO CONSIDER ALL MODELS AND APPEND TO MODEL_NAME
                               stored_opt_parameters[[model_name]] <- opt_params
                               # train optimized model by calling each classifier's trainModel and save it under project's directory
                               val_partitions        <- data_prepare_$partitionData(preprocessed_dataset, technique = list(name = "holdout", ratio = 0.9))
@@ -154,17 +152,18 @@ Server <- setRefClass(Class = "Server",
                             # report ensemble's performance
                             ensemble_expert      <- Expert$new()
                             ensemble_expert$processTask(task = list())
-                            ensemble_performance <- ensemble_expert$getPerformance(predictions = as.factor(predictions), actual_class = test_datasets[[1]]$Class,
+                            ensemble_performance[[i]] <- ensemble_expert$getPerformance(predictions = as.factor(predictions), actual_class = test_datasets[[1]]$Class,
                                                                                    predicted_probs = predicted_probabilities, performance_metric = performance_metric_)
+                            ensemble_models_total <- c(ensemble_models_total, ensemble_models)
                             
                           }
                           # re-train ensemble's models on whole dataset for storing
                           final_models   <- list()
                           final_datasets <- list()
                           counter <- 1
-                          for(k in seq(1,length(ensemble_models))) {
+                          for(k in seq(1,length(ensemble_models_total))) {
                             # get algorithm's name
-                            selected_model <- ensemble_models[[k]]
+                            selected_model <- ensemble_models_total[[k]]
                             load(selected_model)
                             model_name     <- model$method
                             # retrieve opt_params and preprocessed, which have already been computed
@@ -223,16 +222,16 @@ Server <- setRefClass(Class = "Server",
                           # gather info about ensemble
                           ensemble_info[["ensemble_data"]] <- list(performance = performance, time = time_)
                           # save RData of ensemble
-                          file_manipulator_$saveRdata(data = ensemble_info, file = "ensemble_info.Rdata")
+                          #file_manipulator_$saveRdata(data = ensemble_info, file = "ensemble_info.Rdata")
                           # save RData of experiment
                           experiment_info <- gatherExperimentInfo(experts, included_models = included_models, performance = performance, ensemble_expert = ensemble_expert)
                           file_manipulator_$saveRdata(data = experiment_info, file = "experiment_info.Rdata")
                           # save data-visualization plots
-                          feature_visualizer_$savePlots()
+                          #feature_visualizer_$savePlots()
                           # save performance plots
-                          performance_visualizer_$savePlots()
+                          #performance_visualizer_$savePlots()
                           # save plots describing ensemble
-                          ensembler_$savePlots()
+                          #ensembler_$savePlots()
                           # generate report
                           file_manipulator_$generateReport(data = experiment_info)
                         },
@@ -269,7 +268,6 @@ Server <- setRefClass(Class = "Server",
                             parameters                 <- lapply(parameters, function(x) as.vector(x))
                             model_info[["parameters"]] <- parameters
                             model_info[["performance"]] <- model$performance_metric
-                            str(model_info$performance)
                             experiment_info[[paste("model_", i, sep = "")]] <- list(model_info = model_info)
                           }
                           # gather ensemble info
@@ -308,7 +306,7 @@ Server <- setRefClass(Class = "Server",
                           performance_visualizer_ <<- PerformanceVisualizer$new()
                           feature_visualizer_     <<- FeatureVisualizer$new()
                           performance_metric_     <<- ""
-                          testing_technique_      <<- list(name = "holdout", ratio = 0.9)
+                          testing_technique_      <<- list(name = "kfold", ratio = 0.9)
                           time_ <<- 0
                           callSuper(...)
                           .self

@@ -93,8 +93,8 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    # create path to file
                                    model_path  <- paste(project_dir,"model/model_files", model_file, sep = "/")
                                    save(model, file = model_path)
-                                   total_model_path <- paste(directories_$Project, model_path, sep = "/")
-                                   return(total_model_path)
+                                   #total_model_path <- paste(directories_$Project, model_path, sep = "/")
+                                   return(model_path)
                                  },
                                  saveEnsemble = function(included_models, info,  ...) {
                                    'Saves built ensemble'
