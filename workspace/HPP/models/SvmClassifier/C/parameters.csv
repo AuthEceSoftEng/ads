@@ -1,0 +1,6 @@
+metafeatures,means,scales,n_boot,percentage,enableLog,step,count
+min.of.mean,3.25420596448528E+020,2.48889804345563E+021,50,0.95,1,0.5,0
+min.of.std,-259348.81262399,1983613.72352379,,,,,
+kurtosis.of.min,8.3452952237,16.3176025955,,,,,
+numFeatures,-259209.271186441,1983632.40629396,,,,,
+logNumFeatures,2.7081555097,1.4751945449,,,,,

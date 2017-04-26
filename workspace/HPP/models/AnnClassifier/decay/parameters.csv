@@ -1,0 +1,7 @@
+metafeatures,means,scales,n_boot,percentage,enableLog,step,count
+mean.of.min,3.25420596448528E+020,2.48889804345563E+021,50,0.95,1,0.2,0
+mean.of.kurtosis,27.254599752,51.6359842262,,,,,
+std.of.min,-648113.875773734,3095603.3716766,,,,,
+kurtosis.of.min,8.365069235,16.3059610456,,,,,
+kurtosis.of.max,8.3231022163,16.0991542642,,,,,
+numPatterns,1330.4406779661,1409.9034551561,,,,,

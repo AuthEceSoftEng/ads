@@ -1,0 +1,7 @@
+metafeatures,means,scales,n_boot,percentage,enableLog,step,count
+sum.of.skewness,273.4061761254,2426.4602452061,50,0.95,1,0.2,0
+mean.of.kurtosis,27.5040177029,51.7866393407,,,,,
+numPatterns,1328.9914529915,1415.8793143079,,,,,
+logNumPatterns,6.4966857924,1.4471109422,,,,,
+numNumericFeatures,84.4017094017,551.5968520926,,,,,
+numCatFeatures,3.6495726496,7.4362998763,,,,,

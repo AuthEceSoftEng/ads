@@ -1,0 +1,5 @@
+metafeatures,means,scales,n_boot,percentage,enableLog,step,count
+std.of.std,1.08686418646961E+016,1.18063670805342E+017,50,0.95,0,1,1
+numNumericFeatures,83.9406779661,549.2569384951,,,,,
+PCAKurtosisFirstPC,23.8391319919,89.5455439417,,,,,
+PCASkewnessFirstPC,0.0702262277,4.4453802603,,,,,
