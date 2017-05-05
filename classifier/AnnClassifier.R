@@ -23,6 +23,7 @@ AnnClassifier$methods(
         trained_model      <- suppressWarnings(train(Class ~ ., data = training_dataset,
                                                      method = model_name_,
                                                      tuneGrid = current_parameters,
+                                                     MaxNWts = 99999999 , # this parameter is used by nnet to prohibit large training times
                                                      trControl=trainControl(method="none", classProbs =  TRUE))
                                                )
         colnames(trained_model$trainingData)[which(names(trained_model$trainingData) == ".outcome")] <- "Class"
