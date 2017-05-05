@@ -1,5 +1,7 @@
 automl is a command-line tool for the automization of machine learning experiments. It is written in R. Its aim is to offer automated solutions for each step of a machine learning pipeline by employing a variety of R packages. Meta-learning has been applied for the prediction of optimal model hyper-parameters and heuristics have been embedded in order to insert expert-like behavior to preprocessing and evaluation techniques. We are currently dealing with binary classification problems, for which we produce an optimized ensemble using the forward-model selection technique. The interface of our program aims at offering a highly customizable data scientist with an easily understandable and reusable output. To this end, a report describing the conducted experiment is created upon completion.
 
+This is a project developed for linux-gnu using R version 3.3. All package dependencies are installed under a project-specific 'lib' directory.
+
 experiment.R is the interface to the project. Your R working directory must be automl to run it. Script build_script.R is used to source all files and install all required packages.
 
 Run 
