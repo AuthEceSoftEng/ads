@@ -41,7 +41,6 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                        predictClassifier = function(model_to_pred, dataset, type = "raw") {
                          'Predicts using a classification model. Model_to_pred is the name of the file containing the model.'
                          # load model
-                         str(model_to_pred)
                          load(model_to_pred)
                          predictions <- predict(model, dataset, type = type)
                          return(predictions)

@@ -18,6 +18,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    class_attribute_    = "factor",
                                    performance_metric_ = "character",
                                    expert_             = "Expert",
+                                   evolution_          = "numeric",
                                    info_               = "list"
                                  ),
                                  methods = list(
@@ -41,16 +42,22 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    initializeEnsemble = function(project_dir, ...){
                                      'Initializes the ensemble with N best ranking models'
                                      N             <- floor(perc_initial_ * classifier_$getNumModels(project_dir = project_dir))
+                                     if(N > M_) {
+                                       N <- M_
+                                     }
                                      # rank models by its contributions
-                                     models        <- classifier_$getModels(project_dir = project_dir)
-                                     contributions <- evaluateModelContribution(models_to_eval = models)
-                                     # pick N best models
-                                     initList     <- order(contributions, decreasing = TRUE)[1:N]
-                                     init_models  <- classifier_$getModels(project_dir = project_dir)
-                                     init_models  <- init_models[initList]
-                                     for(i in init_models) {
-                                        updateEnsemble(i)
-                                      }
+                                     if(N!=0) {
+                                       models        <- classifier_$getModels(project_dir = project_dir)
+                                       contributions <- evaluateModelContribution(models_to_eval = models)
+                                       # pick N best models
+                                       initList     <- order(contributions, decreasing = TRUE)[1:N]
+                                       init_models  <- classifier_$getModels(project_dir = project_dir)
+                                       init_models  <- init_models[initList]
+                                       for(i in init_models) {
+                                         updateEnsemble(i)
+                                       }  
+                                     }
+                                     
                                    },
                                    getPerformance = function(...){
                                      'Returns current performance of ensemble'
@@ -80,7 +87,8 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      # update info of ensemble
                                      size_of_sample  <- ceiling(p_ * length(total_models))
                                      # for each bootstrap sample
-                                     for (i in c(1:(M_-size_of_sample))) {
+                                     evolution_ <- c()
+                                     for (i in c(1:(M_-length(included_models_)))) {
                                        # get bootstrap sample of total models
                                        models          <- sample( x = total_models, replace = TRUE, size = size_of_sample)
                                        # evaluate contributions
@@ -93,6 +101,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      }
                                      info_$parameters <<- list( initial_ensemble_size = M_, probability_of_inclusion = p_, size = length(included_models_))
                                      info_$tuning     <<- list(size = nrow(test_dataset))
+                                     info_$evolution  <<- evolution_
                                      return(included_models_)
                                    },
                                    getEnsemblePredictions = function(datasets, type = "prob", project_dir, ...) {
@@ -111,7 +120,6 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                        model_probs              <- (model_probabilities[[k]])
                                        sum_negative             <- model_probs[[1]] + sum_negative
                                        sum_positive             <- model_probs[[2]] + sum_positive
-
                                      }
                                      sum_model_probabilities$Negative <- sum_negative/length(models)
                                      sum_model_probabilities$Positive <- sum_positive/length(models)
@@ -146,7 +154,8 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      predictions            <- factor(predictions, levels = c(0,1), labels = c("Negative","Positive"))
                                      performance_                    <<- expert_$getPerformance(predictions = predictions , actual_class = class_attribute_,
                                                                              predicted_probs = probabilities_, performance_metric = performance_metric_)
-                                   },
+                                     evolution_              <<- c(evolution_,performance_)
+                                  },
                                    getInfo = function(...) {
                                      'Returns information about ensemble.'
                                      return(info_)
@@ -165,6 +174,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      probabilities_ <<- data.frame(Negative=c(), Positive =c())
                                      performance_   <<- 0
                                      info_          <<- list()
+                                     evolution_     <<- c(0)
                                      callSuper(...)
                                      .self
                                    }
