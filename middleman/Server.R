@@ -138,6 +138,9 @@ Server <- setRefClass(Class = "Server",
                               model_classifier <- GenericClassifier$new()
                               predictions <- model_classifier$predictClassifier(model_to_pred = model, dataset = current_test_dataset , type = "raw")
                               predicted_probabilities <- model_classifier$predictClassifier(model_to_pred = model, dataset = current_test_dataset, type = "prob")
+                              str(predictions)
+                              str(current_test_dataset$Class)
+                              cat("calling from server 1")
                               model_performance <- model_expert$getPerformance(predictions = as.factor(predictions), actual_class = current_test_dataset$Class,
                                                                                predicted_probs = predicted_probabilities, performance_metric = performance_metric_)
                               model_performances <- c(model_performances, model_performance)

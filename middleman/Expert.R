@@ -155,6 +155,7 @@ Expert <- setRefClass(Class = "Expert",
                         },
                         getPerformance = function(predictions, actual_class, predicted_probs, performance_metric, ...) {
                           'Returns performance of model'
+                          cat("calling from expert")
                           # choose appropriate performance metric based on heuristics
                           performance <- c()
                           # --- call Performance Evaluator ---

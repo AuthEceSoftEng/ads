@@ -67,7 +67,6 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    project_dir      <- directories_$Project
                                    # create path to file
                                    models_path      <- paste(project_dir, "model/model_files", sep = "/" )
-                                   #str(paste(models_path, models_to_remove, sep = "/"))
                                    models_to_delete <- as.vector(models_to_remove)
                                    unlink(models_to_delete)
                                  },
