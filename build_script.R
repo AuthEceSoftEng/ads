@@ -1,89 +1,110 @@
+
 #' A script that sets up automl's workspace. It installs missing packages and sources the files.
 #' Run with `source("build_script.R")` from automl directory. <br> <br> <br>
 
 #' Install and load missing  packages
-if(!require(optparse))
+.libPaths("../lib")
+repos_path <- "http://cran.rstudio.com/"
+if(!require(nnet))
 {
-  print("You are missing the package 'optparse', we will now try to install it...")
-  install.packages("optparse")
-  library(optparse)
-}
-if(!require(doParallel))
-{
-  print("You are missing the package 'doParallel', we will now try to install it...")
-  install.packages("doParallel")
-  library(doParallel)
+  print("You are missing the package 'nnet', we will now try to install it...")
+  install.packages("nnet", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
+  library(nnet)
 }
 if(!require(plyr))
 {
   print("You are missing the package 'plyr', we will now try to install it...")
-  install.packages("plyr")
+  install.packages("plyr", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(plyr)
+}
+if(!require(ranger))
+{
+  print("You are missing the package 'ranger', we will now try to install it...")
+  install.packages("ranger", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
+  library(ranger)
+}
+if(!require(optparse))
+{
+  print("You are missing the package 'optparse', we will now try to install it...")
+  install.packages("optparse", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
+  library(optparse)
+}
+if(!require(randomForest))
+{
+  print("You are missing the package 'randomForest', we will now try to install it...")
+  install.packages("randomForest", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
+  library(randomForest)
+}
+if(!require(doParallel))
+{
+  print("You are missing the package 'doParallel', we will now try to install it...")
+  install.packages("doParallel", repos = repos_path , lib ="/home/elennisioti/thesis_ws/lib")
+  library(doParallel)
 }
 if(!require(foreach))
 {
   print("You are missing the package 'foreach', we will now try to install it...")
-  install.packages("foreach")
+  install.packages("foreach", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(foreach)
 }
 if(!require(methods))
 {
   print("You are missing the package 'methods', we will now try to install it...")
-  install.packages("methods")
+  install.packages("methods", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(methods)
 }
 if(!require(caret))
 {
   print("You are missing the package 'caret', we will now try to install it...")
-  install.packages("caret")
+  install.packages("caret", dependencies = TRUE, repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(caret)
 }
 if(!require(FactoMineR))
 {
   print("You are missing the package 'FactoMineR', we will now try to install it...")
-  install.packages("FactoMineR")
+  install.packages("FactoMineR", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(FactoMineR)
 }
 if(!require(MASS))
 {
   print("You are missing the package 'MASS', we will now try to install it...")
-  install.packages("MASS")
+  install.packages("MASS", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(MASS)
 }
 if(!require(coin))
 {
   print("You are missing the package 'coin', we will now try to install it...")
-  install.packages("coin")
+  install.packages("coin", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(coin)
 }
 if(!require(multcomp))
 {
   print("You are missing the package 'multcomp', we will now try to install it...")
-  install.packages("multcomp")
+  install.packages("multcomp", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(multcomp)
 }
 if(!require(colorspace))
 {
   print("You are missing the package 'colorspace', we will now try to install it...")
-  install.packages("colorspace")
+  install.packages("colorspace", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(colorspace)
 }
 if(!require(pROC))
 {
   print("You are missing the package 'pROC', we will now try to install it...")
-  install.packages("pROC")
+  install.packages("pROC", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(pROC)
 }
 if(!require(e1071))
 {
   print("You are missing the package 'e1071', we will now try to install it...")
-  install.packages("e1071")
+  install.packages("e1071", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(e1071)
 }
 if(!require(kernlab))
 {
   print("You are missing the package 'kernlab', we will now try to install it...")
-  install.packages("kernlab")
+  install.packages("kernlab", repos = repos_path, lib ="/home/elennisioti/thesis_ws/lib")
   library(kernlab)
 }
 
