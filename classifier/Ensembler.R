@@ -87,7 +87,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      # update info of ensemble
                                      size_of_sample  <- ceiling(p_ * length(total_models))
                                      # for each bootstrap sample
-                                     evolution_ <- c()
+                                     evolution_ <<- c(0)
                                      for (i in c(1:(M_-length(included_models_)))) {
                                        # get bootstrap sample of total models
                                        models          <- sample( x = total_models, replace = TRUE, size = size_of_sample)
