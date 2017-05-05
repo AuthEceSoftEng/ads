@@ -67,6 +67,10 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                     else if(choice == "autosklearn") {
                                       result <- mf1_extractor_$calculateAutosklearn(dataset = dataset)
                                     }
+                                    result[] <- lapply(result, function(x){
+                                      x[is.nan(x)] <- 0
+                                      x
+                                    }  )
                                     return(result)
                                   },
                                   ##' @export
