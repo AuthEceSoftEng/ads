@@ -34,11 +34,10 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                         # define colors of plot
                                         # define markers of plot
                                         # plot
-                                        require(ggplot2)
-                                        require(reshape2)
                                         perform_profiles <- melt(perform_profiles ,  id.vars = 'x', variable.name = 'algorithm')
                                         # plot on same grid, each series colored differently -- 
                                         # good if the series have same scale
+                                        
                                         ggplot(perform_profiles, aes(value, x)) + geom_line(aes(colour = algorithm)) +
                                           ggtitle('Performance profile plot') + 
                                           labs(x="t",y="P") 
@@ -58,16 +57,16 @@ HypothesisTester <- setRefClass(Class = "HypothesisTester",
                                         # 2-way
                                         if("friedman" %in% methods) {
                                           # convert list of 3 dataframes to table with a column for each model
-                                          num_files <- nrow(results[[1]])
-                                          #friedman_results <- matrix(nrow = num_files, ncol = length(results))
-                                          friedman_vector <- c()
-                                          for(i in seq(1, length(results))) {
-                                            friedman_vector <- c(friedman_vector, results[[i]])
-                                            
-                                          }
-                                          friedman_vector <- unlist(friedman_vector)
-                                          friedman_results <- matrix(friedman_vector, nrow = num_files, byrow = FALSE, dimnames =  list(1:num_files, names(results)))
-                                          friedman_test <-friedman.test(friedman_results, conf.level = conf.level)
+                                          # num_files <- nrow(results[[1]])
+                                          # #friedman_results <- matrix(nrow = num_files, ncol = length(results))
+                                          # friedman_vector <- c()
+                                          # for(i in seq(1, length(results))) {
+                                          #   friedman_vector <- c(friedman_vector, results[[i]])
+                                          #   
+                                          # }
+                                          # friedman_vector <- unlist(friedman_vector)
+                                          # friedman_results <- matrix(friedman_vector, nrow = num_files, byrow = FALSE, dimnames =  list(1:num_files, names(results)))
+                                          friedman_test <-friedman.test(as.matrix(results), conf.level = conf.level)
                                           test_results[["test_result"]] <- friedman_test
                                         }
                                         if("fisher" %in% methods) {
