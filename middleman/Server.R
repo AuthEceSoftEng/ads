@@ -92,7 +92,6 @@ Server <- setRefClass(Class = "Server",
                                 example  <- data.frame(example)
                                 colnames(example) = names(metafeature_dataset)
                                 opt_params <- optimizer_$optimizeHParam(algorithm  = algorithm$algorithm, parameters = algorithm$parameters, metafeatures = example)})
-                             # ATTENTION: IF OPT_PARAMS INCLUDES MORE THAN ONE COMBINATION OF PARAMETERS I HAVE TO CONSIDER ALL MODELS AND APPEND TO MODEL_NAME
                               stored_opt_parameters[[model_name]] <- opt_params
                               # train optimized model by calling each classifier's trainModel and save it under project's directory
                               val_partitions        <- data_prepare_$partitionData(preprocessed_dataset, technique = list(name = "holdout", ratio = 0.9))
@@ -138,9 +137,6 @@ Server <- setRefClass(Class = "Server",
                               model_classifier <- GenericClassifier$new()
                               predictions <- model_classifier$predictClassifier(model_to_pred = model, dataset = current_test_dataset , type = "raw")
                               predicted_probabilities <- model_classifier$predictClassifier(model_to_pred = model, dataset = current_test_dataset, type = "prob")
-                              str(predictions)
-                              str(current_test_dataset$Class)
-                              cat("calling from server 1")
                               model_performance <- model_expert$getPerformance(predictions = as.factor(predictions), actual_class = current_test_dataset$Class,
                                                                                predicted_probs = predicted_probabilities, performance_metric = performance_metric_)
                               model_performances <- c(model_performances, model_performance)
