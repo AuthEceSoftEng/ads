@@ -235,8 +235,10 @@ Server <- setRefClass(Class = "Server",
                           file_manipulator_$generateReport(data = experiment_info)
                         },
                         gatherExperimentInfo = function(experts, included_models, performance, ensemble_expert,  ...) {
-                          # gather data preparation info
                           experiment_info              <- list()
+                          # gather anticipation metric
+                          experiment_info$anticipation_metric <- mf2_extractor_$getAnticipationMetric()
+                          # gather data preparation info
                           experiment_info$data_prepare <- data_prepare_$getInfo()
                           # gather preprocessing info 
                           for(i in 1:length(experts)) {

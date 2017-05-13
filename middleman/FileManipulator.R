@@ -145,6 +145,21 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                  #   }
                                  #   return(xml) 
                                  # },
+                                 loadRepoMetafeatures = function() {
+                                   'Loads meta-features characterizing the training datasets in repo'
+                                   metafeatures <- list()
+                                   # get workspace
+                                   workspace_dir <- directories_$Workspace
+                                   # create path to dataset file
+                                   dataset_path     <- file.path(workspace_dir, "HPP/metafeatures/training_metafeatures.csv")
+                                   # load dataset file
+                                   metafeatures$dataset           <- read.csv(dataset_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
+                                   # create path to parameters file
+                                   parameters_path     <- file.path(workspace_dir, "HPP/metafeatures/metafeatures_parameters.csv")
+                                   # load parameters file
+                                   metafeatures$info           <- read.csv(parameters_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
+                                   return(metafeatures)
+                                 },
                                  saveRdata = function(data, file, ...) {
                                    'Saves data in .RDS formata'
                                    file_name <- paste(directories_$Project, file, sep = "/")

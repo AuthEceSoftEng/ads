@@ -9,7 +9,8 @@
 ##' @exportClass mf2Extractor
 mf2Extractor <- setRefClass(Class = "mf2Extractor",
                             fields = list(
-                              mf1_extractor_ = "mf1Extractor"
+                              mf1_extractor_       = "mf1Extractor",
+                              anticipation_metric_ = "list"
                             ),
                             ##' @import e1071 plyr
                             methods = list(
@@ -71,11 +72,35 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                       x[is.nan(x)] <- 0
                                       x
                                     }  )
+                                    anticipation_metric_ <<- calculateAnticipationMetric(dataset = result)
                                     return(result)
+                                  },
+                                  calculateAnticipationMetric = function(dataset, ... ) {
+                                    distance_info <- list()
+                                    # load metafeatures from repo
+                                    repo_metafeatures <- file_manipulator_$loadRepoMetafeatures()
+                                    # preprocess current dataset
+                                    k       <- repo_metafeatures$info$optimal_k[1]
+                                    means   <- repo_metafeatures$info$means
+                                    scales  <- repo_metafeatures$info$scales
+                                    dataset <- scale(dataset, center = means, scale = scales)
+                                    # calculate distance from all training examples
+                                    distance <- apply(repo_metafeatures$datasets, 2, function(x) {sqrt(sum((x - dataset) ^ 2))})
+                                    # find k-nearest examples
+                                    distance <- distance[order(distance)[1:k]]
+                                    # find average distance
+                                    distance_info$value <- mean(distance)
+                                    distance_info$outlier <- (distance_info$value > repo_metafeatures$info$upper_bound[1]) 
+                                    return(distance_info)
+                                  },
+                                  getAnticipationMetric = function(...) {
+                                    'Returns a metric characterizing how far current dataset lies from the datasets repo.'
+                                    return(anticipation_metric_)
                                   },
                                   ##' @export
                                   initialize = function(...) {
-                                    mf1_extractor_ <<- new('mf1Extractor')
+                                    mf1_extractor_       <<- new('mf1Extractor')
+                                    anticipation_metric_ <<- list()
                                     callSuper(...)
                                     .self
                                   }
