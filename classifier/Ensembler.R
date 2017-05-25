@@ -26,11 +26,14 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    'Evaluate contribution of a model to the ensemble as improvement to current performance.'
                                      sampled_performances <- list()
                                      for (i in c(1:length(models_to_eval))) {
+                                       str(test_dataset_)
                                        model_to_acc              <- models_to_eval[[i]]
                                        # train model to get binary predictions
                                        predictions               <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
                                        # train model to get probability predictions
                                        predicted_probs           <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
+                                       str(predicted_probs)
+                                       str(predictions)
                                        performance               <- expert_$getPerformance(as.factor(predictions), actual_class = class_attribute_,
                                                                                            predicted_probs= predicted_probs, performance_metric = performance_metric_)
                                        sampled_performances[[i]] <- performance
@@ -42,9 +45,12 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    initializeEnsemble = function(project_dir, ...){
                                      'Initializes the ensemble with N best ranking models'
                                      N             <- floor(perc_initial_ * classifier_$getNumModels(project_dir = project_dir))
+
                                      if(N > M_) {
                                        N <- M_
                                      }
+                                     cat("N")
+                                     cat(N)
                                      # rank models by its contributions
                                      if(N!=0) {
                                        models        <- classifier_$getModels(project_dir = project_dir)
@@ -57,6 +63,7 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                          updateEnsemble(i)
                                        }  
                                      }
+                                     return(init_models)
                                      
                                    },
                                    getPerformance = function(...){
@@ -70,6 +77,22 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                    getNumModels = function(...) {
                                      'Returns numbers of models included in ensemble'
                                      return(num_models_)
+                                   },
+                                   getBest = function(classifier, test_dataset, performance_metric, project_dir,  ...){
+                                     'Returns best performing model in library of models'
+                                     performance_metric_ <<- performance_metric
+                                     test_dataset_       <<- test_dataset
+                                     classifier_         <<- classifier
+                                     class_attribute_    <<- test_dataset_$Class
+                                     test_dataset_$Class <<- NULL
+                                     # initialize ensemble probabilities
+                                     number_instances    <- nrow(test_dataset_)
+                                     probabilities_      <<- data.frame( Negative = rep(0, number_instances), Positive =rep(0,number_instances), stringsAsFactors = FALSE)
+                                     # initialize ensemble with best-performing models
+                                     perc_initial_  <<- 1/(classifier_$getNumModels(project_dir = project_dir))
+                                     cat(perc_initial_)
+                                     best_models <- initializeEnsemble(project_dir = project_dir)
+                                     return(best_models[[1]])
                                    },
                                    ensemble = function(classifier, test_dataset, performance_metric, project_dir,  ...){
                                      'Generates an ensemble of classification models'
@@ -88,7 +111,11 @@ Ensembler <- setRefClass(Class = "Ensembler",
                                      size_of_sample  <- ceiling(p_ * length(total_models))
                                      # for each bootstrap sample
                                      evolution_ <<- c(0)
-                                     for (i in c(1:(M_-length(included_models_)))) {
+                                     cat("inculded")
+                                     cat(length(included_models_))
+                                     cat("M")
+                                     cat(M_)
+                                     for (i in seq(1,(M_-length(included_models_)))) {
                                        # get bootstrap sample of total models
                                        models          <- sample( x = total_models, replace = TRUE, size = size_of_sample)
                                        # evaluate contributions

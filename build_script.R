@@ -7,11 +7,42 @@ library_path <- "lib"
 .libPaths(c( .libPaths(),library_path))
 dir.create(library_path,showWarnings = FALSE)
 repos_path <- "http://cran.rstudio.com/"
+
 if(!require(nnet))
 {
   print("You are missing the package 'nnet', we will now try to install it...")
   install.packages("nnet", repos = repos_path, lib = library_path)
   library(nnet)
+}
+if(!require(ROCR))
+{
+  print("You are missing the package 'ROCR', we will now try to install it...")
+  install.packages("ROCR", repos = repos_path, lib = library_path)
+  library(ROCR)
+}
+if(!require(plot3D))
+{
+  print("You are missing the package 'plot3D', we will now try to install it...")
+  install.packages("plot3D", repos = repos_path, lib = library_path)
+  library(plot3D)
+}
+if(!require(akima))
+{
+  print("You are missing the package 'akima', we will now try to install it...")
+  install.packages("akima", repos = repos_path, lib = library_path)
+  library(akima)
+}
+if(!require(fields))
+{
+  print("You are missing the package 'fields', we will now try to install it...")
+  install.packages("fields", repos = repos_path, lib = library_path)
+  library(fields)
+}
+if(!require(ggplot2))
+{
+  print("You are missing the package 'ggpllot2', we will now try to install it...")
+  install.packages("ggplot2", repos = repos_path, lib = library_path)
+  library(ggplot2)
 }
 if(!require(plyr))
 {
@@ -138,9 +169,9 @@ source("visualizer/PerformanceVisualizer.R")
 source("middleman/Server.R")
 source("middleman/InputParser.R")
 
-
-#' Create workspace (if it doesn't exist already)
+#' Define workspace directory  
 mainDir       <- getwd()
 subDir        <- "workspace"
 workspace_dir <- file.path(mainDir, subDir)
-dir.create(workspace_dir, showWarnings = FALSE)
+
+

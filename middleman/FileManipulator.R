@@ -145,7 +145,7 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                  #   }
                                  #   return(xml) 
                                  # },
-                                 loadRepoMetafeatures = function() {
+                                 loadRepoMetafeatures = function(...) {
                                    'Loads meta-features characterizing the training datasets in repo'
                                    metafeatures <- list()
                                    # get workspace
@@ -155,9 +155,10 @@ FileManipulator <- setRefClass(Class = "FileManipulator",
                                    # load dataset file
                                    metafeatures$dataset           <- read.csv(dataset_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
                                    # create path to parameters file
-                                   parameters_path     <- file.path(workspace_dir, "HPP/metafeatures/metafeatures_parameters.csv")
+                                   parameters_path     <- file.path(workspace_dir, "HPP/metafeatures/metafeatures_parameters.Rdata")
                                    # load parameters file
-                                   metafeatures$info           <- read.csv(parameters_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
+                                   load(parameters_path)
+                                   metafeatures$info <- info   
                                    return(metafeatures)
                                  },
                                  saveRdata = function(data, file, ...) {

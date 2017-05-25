@@ -4,11 +4,12 @@
 ##' @export
 Optimizer <- setRefClass(Class = "Optimizer",
                           fields = list(
-                            model_file_        = "character",
-                            parameters_file_   = "character",
+                            model_file_       = "character",
+                            parameters_file_  = "character",
                             file_manipulator_ = "FileManipulator",
                             algorithm_        = "character",
-                            tree_model_cp_    = "character"
+                            tree_model_cp_    = "character",
+                            info_             = "list"
                           ),
                           methods = list(
                             optimizeHParamDefault = function(metafeature_dataset, algorithm,  ...) {
@@ -41,20 +42,29 @@ Optimizer <- setRefClass(Class = "Optimizer",
                               'Returns optimal hyperparameters predicted by HPP model.'
                               parameters_list <- list()
                                 for(i in 1:length(parameters)) {
-                                  p <- parameters[i]
-                                  model          <- file_manipulator_$loadHppModel(name = paste(algorithm_, p, model_file_, sep = "/"))
-                                  model_info <- file_manipulator_$loadModelInfo(name = paste(algorithm_, p, parameters_file_, sep = "/") )
-                                  metafeatures_chosen <- metafeatures[,names(metafeatures) %in% model_info$metafeatures ]
-                                  metafeatures_chosen <- scale(metafeatures_chosen, center = model_info$means, scale = model_info$scales)
-                                  optimal_p      <- predict(model, metafeatures_chosen)
-                                  prediction <- boot_pi(model = model, pdata = metafeatures_chosen, n = model_info$n_boot[1],
-                                                         p =model_info$percentage[1], enableLog = model_info$enableLog[1])
+                                  p                   <- parameters[i]
+                                  model               <- file_manipulator_$loadHppModel(name = paste(algorithm_, p, model_file_, sep = "/"))
+                                  model_info          <- file_manipulator_$loadModelInfo(name = paste(algorithm_, p, parameters_file_, sep = "/") )
+                                  str(metafeatures)
+                                  metafeatures_chosen <- as.data.frame(metafeatures[,names(metafeatures) %in% model_info$metafeatures ])
+                                  str(metafeatures_chosen)
+                                  str(model_info$means)
+                                  metafeatures_chosen <- as.data.frame(scale(metafeatures_chosen, center = model_info$means, scale = model_info$scales))
+                                  optimal_p           <- predict(model, metafeatures_chosen)
+                                  prediction          <- boot_pi(model = model, pdata = metafeatures_chosen, n = model_info$n_boot[1],
+                                                         p = model_info$percentage[1], enableLog = model_info$enableLog[1])
                                   if(model_info$count) {
                                     prediction <- round(prediction)
                                   }
-                                    interval <- prediction[,c(2, 3)]
-                                  parameter_vector <- seq((unlist(interval[1])),unlist(interval[2]),model_info$step[1])
+                                  interval             <- prediction[,c(2, 3)]
+                                  parameter_vector     <- seq((unlist(interval[1])),unlist(interval[2]),model_info$step[1])
                                   parameters_list[[p]] <- parameter_vector
+                                  # update information
+                                  info_$size           <<- info_$size + length(parameter_vector)
+                                  info_$results[1, p %in% names(info_$results)] <<- optimal_p
+                                  info_$results[2, p %in% names(info_$results)] <<- interval[1]
+                                  info_$results[3, p %in% names(info_$results)] <<- interval[2]
+                                  info_$results[4, p %in% names(info_$results)] <<- model_info$step[1]
                                 }
                                 return(parameters_list)
                             },
@@ -104,11 +114,16 @@ Optimizer <- setRefClass(Class = "Optimizer",
                               }
                               return(data.frame(pred = predicted, lower = boot_ci[, 1] , upper = boot_ci[, 2] ))
                             },
+                            getInfo = function(...) {
+                              'Return information about hyperparameter optimization'
+                              return(info_)
+                            },
                               initialize = function(...) {
                                 model_file_        <<- "model.RData"
                                 parameters_file_   <<- "parameters.csv"
-                                file_manipulator_ <<- FileManipulator$new()
-                                algorithm_        <<- ""
+                                file_manipulator_  <<- FileManipulator$new()
+                                algorithm_         <<- ""
+                                info_              <<- list(size = 0, results = as.data.frame(matrix(nrow =4, ncol = 6)))
                                 callSuper(...)
                                 .self
                               }

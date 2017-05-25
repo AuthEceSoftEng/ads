@@ -164,10 +164,23 @@ Expert <- setRefClass(Class = "Expert",
                           if(performance_metric == "auc" ) {
                             performance <- performance_evaluator_$calculateAUC(predicted_probs = predicted_probs)
                           } else {
+                            cat("in expert")
+                            str(performance_metric)
+                            str(actual_class)
+                            str(predictions)
                             performance <- performance_evaluator_$calculateConfusionMatrixMetrics(selected_metrics = performance_metric,
                                                                                                   actual_class = actual_class, predictions = predictions)
                           }
                           return(performance)
+                        },
+                        getPartitionRatio = function(testing_technique, N) {
+                          'Returns ratio of data instances used for training by exploiting heuristcs'
+                          if(testing_technique$name == "holdout") {
+                            testing_technique$ratio <- 1-N/5 # use one fifth of data for testing
+                          } else if (testing_technique$name == "kfold") {
+                            testing_technique$ratio <- 0.9 # use 10-fold 
+                          }
+                          return(testing_technique$ratio)
                         },
                         getHypothesisTester = function(...) {
                           'Returns object normalizer_'

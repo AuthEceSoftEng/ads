@@ -4,13 +4,14 @@
 ##' @export
 GenericClassifier <- setRefClass(Class = "GenericClassifier",
                      fields = list(
-                       dataset_         = "data.frame",
-                       num_models_      = "numeric",
-                       class_attribute_ = "data.frame",
-                       accuracy_        = "numeric",
-                       seed_            = "numeric",
-                       model_name_      = "character",
-                       model_parameters_ = "character"
+                       dataset_          = "data.frame",
+                       num_models_       = "numeric",
+                       class_attribute_  = "data.frame",
+                       accuracy_         = "numeric",
+                       seed_             = "numeric",
+                       model_name_       = "character",
+                       model_parameters_ = "character",
+                       info_             = "list"
                      ),
                      methods = list(
                        getNumModels = function(project_dir, ... ) {
@@ -66,10 +67,15 @@ GenericClassifier <- setRefClass(Class = "GenericClassifier",
                          'Returns a vector of hyperparameters for particular model.'
                          return(model_parameters_)
                        },
+                       AdequateExamples = function(...) {
+                         'Denotes that the number of adequate examples is unknown. Used for algorithms with uncomputable VC-dimension.'
+                         return(NA)
+                       },
                        initialize=function(...) {
                          seed_       <<- 1
                          num_models_ <<- 0
                          accuracy_   <<- 0
+                         info_       <<- list()
                          callSuper(...)
                          .self
                        }

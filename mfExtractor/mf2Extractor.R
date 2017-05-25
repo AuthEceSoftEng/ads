@@ -10,6 +10,7 @@
 mf2Extractor <- setRefClass(Class = "mf2Extractor",
                             fields = list(
                               mf1_extractor_       = "mf1Extractor",
+                              file_manipulator_    = "FileManipulator",
                               anticipation_metric_ = "list"
                             ),
                             ##' @import e1071 plyr
@@ -83,9 +84,12 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                     k       <- repo_metafeatures$info$optimal_k[1]
                                     means   <- repo_metafeatures$info$means
                                     scales  <- repo_metafeatures$info$scales
+                                    dataset <- dataset[, names(dataset) %in% names(repo_metafeatures$info$means)]
                                     dataset <- scale(dataset, center = means, scale = scales)
                                     # calculate distance from all training examples
-                                    distance <- apply(repo_metafeatures$datasets, 2, function(x) {sqrt(sum((x - dataset) ^ 2))})
+                                    str(repo_metafeatures$dataset)
+                                    str(dataset)
+                                    distance <- apply(repo_metafeatures$dataset, 1, function(x) {sqrt(sum((x - dataset) ^ 2))})
                                     # find k-nearest examples
                                     distance <- distance[order(distance)[1:k]]
                                     # find average distance
@@ -99,6 +103,7 @@ mf2Extractor <- setRefClass(Class = "mf2Extractor",
                                   },
                                   ##' @export
                                   initialize = function(...) {
+                                    file_manipulator_    <<- FileManipulator$new()
                                     mf1_extractor_       <<- new('mf1Extractor')
                                     anticipation_metric_ <<- list()
                                     callSuper(...)

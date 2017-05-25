@@ -85,7 +85,11 @@ DataPrepare <- setRefClass(Class = "DataPrepare",
                              partitionData = function(dataset, technique = list(name = "kfold", ratio = 0.9), ..) {
                                'Returns training and testing partitions of data according to technique'
                                if(technique$name == "holdout"){
-                                 partitions <- caret::createDataPartition(times = 1, dataset$Class, p=technique$ratio, list = FALSE)
+                                 str(technique$ratio)
+                                 partitions <- caret::createDataPartition( dataset$Class, p=technique$ratio, list = FALSE)
+                                 cat("in caret")
+                                 str(partitions)
+                                 str(dataset)
                                }
                                else if(technique$name == "kfold"){
                                  partitions <- caret::createDataPartition(times = 1/(1-technique$ratio), dataset$Class, p=technique$ratio, list = FALSE)
