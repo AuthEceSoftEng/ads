@@ -70,8 +70,8 @@ Expert$methods(
   #' @return name normalization method
   chooseNormalizationMethod = function(dataset, ...) {
     'Chooses between zscore and minmax normalization based on processed_task'
-    if(!is.na(processed_task_$preprocess)) {
-      return(processed_task_$preprocess)
+    if(!is.na(processed_task_$normalize)) {
+      return(processed_task_$normalize)
     }else {
       # check if minmax is appropriate, else 
       return("zscore")
@@ -128,23 +128,43 @@ Expert$methods(
     if(!final) processTask(task)
     else processed_task_ <<- task
     # remove inappropriate values(NAs and infinites)
-    unknown_action <- list(act="replace", rep=0)
-    inf_action     <- list(act="delete")
-    dataset        <- inap_remover_$removeInfinites(dataset, inf_action = list(act="delete"))
+    inf_action     <- list()
+    unknown_action <- list()
+    if(is.na(processed_task_$inf_action)) {
+      inf_action$act <- "replace"
+    } else {
+      inf_action$act <- processed_task_$inf_action
+    }
+    if(is.na(processed_task_$inf_replace)) {
+      inf_action$rep <-  0
+    } else {
+      inf_action$rep <- processed_task_$inf_action
+    }
+    if(is.na(processed_task_$unknown_action)) {
+      unknown_action$act <- "replace"
+    } else {
+      unknown_action$act <- processed_task_$unknown_action
+    }
+    if(is.na(processed_task_$unknown_replace)) {
+      unknown_action$rep <-  0
+    } else {
+      unknown_action$rep<- processed_task_$unknown_action
+    }
+    dataset        <- inap_remover_$removeInfinites(dataset, inf_action = inf_action)
     dataset        <- inap_remover_$removeUnknown(dataset, unknown_action =  unknown_action)
     processed_task_$preprocess$inapproriate <<- list(NA_action = unknown_action, Inf_action = inf_action)
     # choose between minmax and zscore Normalization
     method <- chooseNormalizationMethod()
     if(method == "zscore") {
-      dataset                                     <- normalizer_$zscoreNormalize(dataset, precomputed = c("std","mean"))
+      dataset                                     <- normalizer_$zscoreNormalize(dataset)
       processed_task_$preprocess$normalize$zscore <<- normalizer_$getZscoreAttributes()
     } 
     else if(method == "minmax") {
-      dataset                                     <- normalizer_$minMaxNormalize(dataset, precomputed = c("min","max"))
+      dataset                                     <- normalizer_$minMaxNormalize(dataset)
       processed_task_$preprocess$normalize$minmax <<- normalizer_$getMinMaxAttributes()
     }
     # choose if data should be compressed
-    if(IsCompressRequired(dataset)) {
+    if(isCompressRequired(dataset)) {
       dataset_numeric                         <- data_compressor_$performPCA(dataset)
       dataset_cat                             <- data_compressor_$performMDA(dataset)
       if(ncol(dataset_numeric) == 0) {
@@ -160,7 +180,7 @@ Expert$methods(
       processed_task_$preprocess$compress$MDA <<- list( num_attributes = data_compressor_$getNumMDAAttributes())
     }
     # choose feature transformation
-    indexes <- IsLogTransformRequired(dataset)
+    indexes <- isLogTransformRequired(dataset)
     if(!is.null(indexes)) {
       dataset <- feature_engineer_$applyLogTransform(dataset, indexes)
     }
@@ -374,31 +394,44 @@ Expert$methods(
     'Returns comparisons on machine learning models based on hypothesis testing and according to task'
     # decide upon kind of test
     # auc is default metric
-    if(is.null(task$compare$metric)) task$compare$metric <- "auc"
-    # extract performance metric from results
-    results <- lapply(results, function(x) as.data.frame(x[, task$compare$metric]))
-    if(length(results) == 2) {
+    if(ncol(results) == 2) {
       # if conditions are met apply Student's t-test
-      if(tTestApplicable()) {
+      if(isTTestApplicable) {
         test_result <- hypothesis_tester_$rankTest(results, methods = c("ttest"), conf.level = conf_level_ )
       } else {
         test_result <- hypothesis_tester_$rankTest(results, methods = c("wilcoxon"), conf.level = conf_level_)
       }
     } 
-    else if(length(results)>2){
+    else if(ncol(results) > 2){
       # if conditions are met apply ANOVA
-      if(anovaApplicable()) {
+      if(isAnovaApplicable()) {
         test_result <- hypothesis_tester_$rankTest(results, methods = c("ANOVA"), conf.level= conf_level_)
       } else {
         test_result <- hypothesis_tester_$rankTest(results, methods = c("friedman"), conf.level = conf_level_)
       }
+      # post-hoc test
+      results$X <- NULL
+      Performances <- data.frame(
+        Performance = as.vector(t(results)),
+        Method = factor(rep(c("knnGrid", "nnetGrid", "treeGrid", "ensembleGrid", "knnTpe", "nnetTpe", "treeTpe","ensembleTpe","automl"), 9)),
+        Dataset = factor(rep(1:18, rep(9, 18))))
+      post_hoc <- posthoc.friedman.nemenyi.test(Performance ~ Method | Dataset ,Performances)
+      indexes <- post_hoc$p.value < 0.05
+      indexes <- which(indexes==TRUE, arr.ind = TRUE)
+      r_index <- rownames(post_hoc$p.value)[indexes[,1]]
+      c_index <- colnames(post_hoc$p.value)[indexes[,2]]
+      post_hoc$r_index <- r_index
+      post_hoc$c_index <- c_index
     } else {
       cat("Error: You need more than one models to compare.")
       test_result <- NULL
     }
-    if(test_result$test_result$p.value > conf_level_) test_result$test_result$Null-Hypothesis <- "Rejected"
-    else test_result$test_result$Null-Hypothesis <- "Not-Rejected"
+    test_result <- test_result[[1]]
+    test_result$post_hoc <- post_hoc
+    if(test_result$p.value > conf_level_) test_result$Null_Hypothesis <- FALSE
+    else test_result$Null_Hypothesis <- TRUE
     # test_result is a list containing all information extracted from test
+    test_result$conf_level  <- conf_level_
     return(test_result)
   },
   initialize = function(...) {

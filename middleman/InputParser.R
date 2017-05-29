@@ -32,20 +32,32 @@ InputParser$methods(
       options$project <- dataset_name
     }      
     project_name   <- options$project
-    experimet_task <- list(preprocess = list(compress = options$compress,
-                                             normalize = options$normalize,
-                                             unknown = options$unknown,
-                                             inf = options$infinites,
-                                             outlier = options$outliers
-    ),
-    algorithms    <- options$algorithms,
-    ensemble_size <- options$ensemble_size)
+    experiment_task <- list(compress = options$compress,
+                            normalize = options$normalize,
+                            inf = options$infinites,
+                            outlier = options$outliers,
+                            unknown_action = options$unknown_action,
+                            unknown_replace = options$unknown_replace,
+                            inf_action = options$inf_action,
+                            inf_replace = options$inf_replace,
+                            dis_svm = options$dis_svm,
+                            dis_ann = options$dis_ann,
+                            dis_bayes = options$dis_bayes,
+                            dis_tree = options$dis_tree,
+                            dis_knn = options$dis_knn,
+                            ensemble_size = options$ensemble_size,
+                            testing_technique = options$testing_technique,
+                            performance = options$performance,
+                            testing_technique_ratio = options$testing_technique_ratio,
+                            benchmark_file = options$benchmark_file
+                            
+                            )
     server_$createProject( dataset_name = dataset_file,
                            project_name = project_name,
                            workspace_dir = options$workspace)
     server_$setExperimentTask(experiment_task = experiment_task)
     if(options$train) server_$trainScientist() # not implemented
-    else server_$performExperiment(dataset_name = dataset_file)
+    if(options$experiment) server_$performExperiment(dataset_name = dataset_file)
     if(options$compare) server_$compareAlgorithms() # not implemented
   },
   initialize=function(...) {

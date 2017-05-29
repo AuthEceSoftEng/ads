@@ -68,7 +68,7 @@ InapRemover$methods(
     }
     # update info
     info_$Infinites       <<- inf_info
-    return(dataset_treated)
+    return(dataset)
   },
   #' Remove outliers
   #' 

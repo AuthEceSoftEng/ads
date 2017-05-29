@@ -17,6 +17,7 @@
 #' @slot evolution_ vector of consecutive performances of ensemble
 #' @slot seed_ seed for control of randomness
 #' @slot info_ list of information about ensemble
+#' 
 #' @include GenericClassifier.R 
 #' @include FileManipulator.R
 #' @include Expert.R
@@ -146,9 +147,9 @@ Ensembler$methods(
      for (i in c(1:length(models_to_eval))) {
        model_to_acc              <- models_to_eval[[i]]
        # train model to get binary predictions
-       predictions               <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
+       predictions               <- classifier_$predictModel(model_to_pred = model_to_acc, dataset = test_dataset_, type = "raw" )
        # train model to get probability predictions
-       predicted_probs           <- classifier_$predictClassifier(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
+       predicted_probs           <- classifier_$predictModel(model_to_pred = model_to_acc, dataset = test_dataset_, type = "prob")
        performance               <- expert_$getPerformance(as.factor(predictions), actual_class = class_attribute_,
                                                            predicted_probs= predicted_probs, performance_metric = performance_metric_)
        sampled_performances[[i]] <- performance
@@ -169,7 +170,7 @@ Ensembler$methods(
   updateEnsemble = function(model){
     'Incorporates a new model to the ensemble by averaging its predictions.'
     # use model to predict dataset
-    model_probabilities             <- classifier_$predictClassifier(model, dataset = test_dataset_, type = "prob")
+    model_probabilities             <- classifier_$predictModel(model, dataset = test_dataset_, type = "prob")
     # update predictions of ensemble 
     probabilities_                  <<- (probabilities_ * num_models_ + model_probabilities)/
       (num_models_ + 1)
@@ -209,7 +210,7 @@ Ensembler$methods(
     for(k in seq(1,length(models))) {
       datasets[[k]]$Class <- NULL
       model <- models[[k]]
-      model_probs <- classifier_$predictClassifier(model, dataset = datasets[[k]], type = "prob")
+      model_probs <- classifier_$predictModel(model, dataset = datasets[[k]], type = "prob")
       sum_negative             <- model_probs[[1]] + sum_negative
       sum_positive             <- model_probs[[2]] + sum_positive
     }

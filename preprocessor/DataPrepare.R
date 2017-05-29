@@ -118,21 +118,24 @@ DataPrepare$methods(
   disposeRareLevels = function(dataset,  ... ) {
     'Finds rare levels in categorical attributes and reassigns them to a new level'
     frequencies             <- apply(dataset, 2, function(x) as.list(table(x)/length(x)))
-    mean_frequencies        <- lapply(frequencies, function(x) mean(x))
     rare_frequencies        <- as.list(lapply(frequencies, function(x) which(x < factor_threshold_)))
-    names(rare_frequencies) <-  as.list(lapply(frequencies, function(x) names(which(x < factor_threshold_))))
+    names(rare_frequencies) <-  colnames(dataset)
     return_dataset          <- as.data.frame(matrix(nrow = nrow(dataset), ncol = 1))
     # update data_prepare_info with names of compressed_attributes
     info_$compressed_attributes <<- c(names(dataset[,names(rare_frequencies)]))
-    for(i in seq(1, length(rare_frequencies))) {
-      dataset_column <- apply(as.data.frame(dataset[,i]), 2,
-                              function(x) mapvalues(x, from = names(rare_frequencies[[i]]), to = rep("rare", length(rare_frequencies[[i]]))))
-      return_dataset <- cbind(return_dataset, dataset_column)
+    if(length(rare_frequencies) != 0) {
+      for(i in seq(1, length(rare_frequencies))) {
+        dataset_column <- dataset[,i]
+        dataset_column <-  mapvalues(dataset_column, from = names(rare_frequencies[[i]]),
+                                     to = rep("rare", length(rare_frequencies[[i]])))
+        return_dataset <- cbind(return_dataset, dataset_column)
+      }
+      return_dataset[,1]       <- NULL
+      colnames(return_dataset) <- names(dataset)
+      # update info
+      info_$rare_levels <<- rare_frequencies
     }
-    return_dataset[,1]       <- NULL
-    colnames(return_dataset) <- names(dataset)
-    # update info
-    info_$rare_levels <- rare_frequencies
+   
     return(return_dataset)
   },
   #' Partition data
@@ -188,7 +191,7 @@ DataPrepare$methods(
     return(info_)
   },
   initialize=function(...) {
-    factor_threshold_ <<- 1
+    factor_threshold_ <<- 0
     info_ <<- list()
     callSuper(...)
     .self

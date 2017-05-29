@@ -2,7 +2,11 @@
 #'
 #' Level-2 metafeatures include: summation, mean, std, min, max, kurtosis and skewness.
 #' 
-#' @include GenericClassifier.R 
+#' @slot file_manipulator_ an instance of Class \code{\link{FileManipulator}}
+#' @slot mf1_extractor_ an instance of Class \code{\link{mf1Extractor}}
+#' 
+#' @include mf1Extractor.R 
+#' @include FileManipulator.R
 #' 
 #' @import methods
 #' @import caret
@@ -62,7 +66,7 @@ mf2Extractor$methods(
   get2MetaFeatures = function(dataset, ...) {
     'Returns level-2 metafeatures of a dataset. This is the interface of the package'
     original_dataset <- dataset
-    original_class   <- Class
+    original_class   <- dataset$Class
     dataset$Class    <- NULL
     cat_features     <- names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
     dataset_cat      <- as.data.frame(original_dataset[ , (names(original_dataset) %in% cat_features)])
@@ -73,21 +77,24 @@ mf2Extractor$methods(
       return(NULL)
     } else if((ncol(dataset_cat) != 0) && (ncol(dataset_num) != 0) ) {
       # dataset with both categorical and numeric features
-      feats_num <- calculateStatisticalNumeric(dataset = dataset_num)
-      feats_cat <- calculateStatisticalCategorical(dataset = dataset_cat)
+      feats_num <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_num)
+      feats_cat <- mf1_extractor_$calculateStatisticalCategorical(dataset = dataset_cat)
       result    <- cbind(feats_num, feats_cat)
+      result    <- calculate2MetaFeatures(result)
       
     } else if((ncol(dataset_cat) != 0)) {
       # dataset with only categorical features
       dataset_num <- mf1_extractor_$dummyEncode(dataset_cat)
-      feats_num   <- calculateStatisticalNumeric(dataset = dataset_num)
-      feats_cat   <- calculateStatisticalCategorical(dataset = dataset_cat)
+      feats_num   <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_num)
+      feats_cat   <- mf1_extractor_$calculateStatisticalCategorical(dataset = dataset_cat)
       result      <- cbind(feats_num, feats_cat)
+      result      <- calculate2MetaFeatures(result)
     } else if((ncol(dataset_num) != 0) ) {
       # dataset with only numerical features
-      feats_num   <- calculateStatisticalNumeric(dataset = dataset_num)
-      feats_cat   <- calculateStatisticalCategorical(dataset = dataset_num)
+      feats_num   <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_num)
+      feats_cat   <- mf1_extractor_$calculateStatisticalCategorical(dataset = dataset_num)
       result      <- cbind(feats_num, feats_cat)
+      result      <- calculate2MetaFeatures(result)
     }
     # extract simple meta-features
     simpleFeats           <-  mf1_extractor_$calculateSimple(original_dataset)

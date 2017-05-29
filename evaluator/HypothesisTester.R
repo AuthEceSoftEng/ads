@@ -12,6 +12,8 @@
 ##' @import methods
 ##' @import stats
 ##' @import tikzDevice
+##' @import PMCMR
+##' @import reshape2
 ##' 
 ##' @export 
 HypothesisTester <- setRefClass(Class = "HypothesisTester",
@@ -37,6 +39,7 @@ HypothesisTester$methods(
   performanceProfiler = function(performances, file_name, project_dir, ...) {
     'Creates performance profiles of different algorithms. Performances is a data.frame with columns 
     corresponding to different algorithms and rows to different datasets'
+    performances$X <- NULL
     perform_profiles <- data.frame()
     # find minimum of each column
     alg_min <- apply(performances, 1, function(x) min(x, na.rm = TRUE))
@@ -58,12 +61,16 @@ HypothesisTester$methods(
         ggtitle('Performance profile plot') + 
         labs(x="t",y="P")
       dev.off()
+      
       TRUE
     }, warning = function(w) {
       FALSE
     }, error = function(e) {
       FALSE
     })
+    ggplot(perform_profiles, aes(value, x)) + geom_line(aes(colour = algorithm)) +
+      ggtitle('Performance profile plot') + 
+      labs(x="t",y="P")
     return(result)
   },
   #' Test for ranking of algorithms
@@ -95,7 +102,7 @@ HypothesisTester$methods(
     }
     # 2-way
     if("friedman" %in% methods) {
-      friedman_test <-friedman.test(results, conf.level = conf.level)
+      friedman_test <-friedman.test(as.matrix(results), conf.level = conf.level)
       test_results[["friedman"]] <- friedman_test
     }
     if("fisher" %in% methods) {

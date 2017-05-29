@@ -22,6 +22,7 @@ Optimizer <- setRefClass(Class = "Optimizer",
                             model_file_       = "character",
                             parameters_file_  = "character",
                             file_manipulator_ = "FileManipulator",
+                            seed_             = "numeric",
                             info_             = "list"
                             )
                          )
@@ -46,14 +47,14 @@ Optimizer$methods(
       p                   <- parameters[i]
       # load neccessary information
       model               <- file_manipulator_$loadHppModel(name = paste(algorithm, p, model_file_, sep = "/"))
-      model_info          <- file_manipulator_$loadModelInfo(name = paste(algorithm, p, parameters_file_, sep = "/") )
+      model_info          <- file_manipulator_$loadHPPModelInfo(name = paste(algorithm, p, parameters_file_, sep = "/") )
       # preprocess metafeatures according to HPP model
       metafeatures_chosen <- as.data.frame(metafeatures[,names(metafeatures) %in% model_info$metafeatures ])
       metafeatures_chosen <- as.data.frame(scale(metafeatures_chosen, center = model_info$means, scale = model_info$scales))
       # predict optimal hyperparameter value
       optimal_p           <- predict(model, metafeatures_chosen)
       # determine prediction interval
-      prediction          <- boot_pi(model = model, pdata = metafeatures_chosen, n = model_info$n_boot[1],
+      prediction          <- bootPi(model = model, pdata = metafeatures_chosen, n = model_info$n_boot[1],
                                      p = model_info$percentage[1], enableLog = model_info$enableLog[1])
       if(model_info$count) { # if hyperparameter is an integer
         prediction <- round(prediction)

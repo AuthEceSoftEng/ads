@@ -99,10 +99,10 @@ DataCompressor$methods(
         keep                <- (which(cumsum((st_dev)^2) / sum(st_dev^2)>=variance)[1])
         num_mda_attributes_ <<- keep
         trans_dataset       <- data.frame(mca$ind$coord)[, 1:keep]
-        colnames(trans_dataset) <- paste("PC", seq(1, keep), sep = "")
+        colnames(trans_dataset) <- paste("MD", seq(1, keep), sep = "")
       } else { # applying MDA on test
         keep                <- number_of_attributes
-        if(ncol(mca$x) < keep) { # if features are correlated MDA may give fewer MD components
+        if(ncol(mca$ind$coord) < keep) { # if features are correlated MDA may give fewer MD components
           diff                                      <- keep - ncol(mca$ind$coord)
           empty_data_frame                          <- as.data.frame(matrix(nrow = nrow(mca$ind$coord), ncol = diff))
           empty_data_frame[is.na(empty_data_frame)] <- 0

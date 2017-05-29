@@ -73,8 +73,18 @@ FileManipulator$methods(
   #'  
   #' @name loadBenchmarks
   #' @alias loadBenchmarks
-  loadBenchmarks = function(...) {
+  loadBenchmarks = function(file, ...) {
     'Loads results of algorithms'
+    if(is.na(file)) {
+      benchmark_file <- "benchmarks/thesis_benchmarks.csv"
+    } else {
+      benchmark_file <- file
+    }
+    benchmark_file <- file.path(directories_$Workspace, benchmark_file)
+    benchmarks     <- read.csv(benchmark_file,
+                              header = TRUE, sep=",", stringsAsFactors=FALSE
+                              )
+    return(benchmarks)
   },
   #' Clear models
   #' 
@@ -197,15 +207,32 @@ FileManipulator$methods(
   #' @alias generateReport
   #' 
   #' @param data information about experiment
-  generateReport = function(data, ...) {
+  #' @parm type "experiment" or "compare"
+  generateReport = function(data, type, ...) {
     'Generates report of experiment with all useful information produced in file experiment.pdf'
-    # assign list's elements to latex template
-    report_template <- "docs/automl_report"
-    current_report  <- paste(directories_$Project, "automl_repo", sep = "")
+    # choose report type
+    if(type == "experiment") {
+      report_name <- "automl_report"
+    } else {
+      report_name <- "compare_report"
+    }
+    # copy template to current project
+    report_template <- file.path("docs", report_name)
+    current_report  <- file.path(directories_$Project, report_name)
     file.copy(from = paste(report_template, ".Rmd", sep =""), to = paste(current_report, ".Rmd", sep ="")) 
     knit(paste(current_report, ".Rmd", sep =""))
+    file.rename(from = paste(file.path(data$install_dir, report_name), ".md", sep =""),
+                to = paste(current_report, ".md", sep ="")) 
+    # copy figures to current project
+    figure_dir        <- file.path(data$install_dir, "figure")
+    figure_files      <- list.files(path = figure_dir, full.names = FALSE)
+    dir.create(file.path(directories_$Project, "figure"))
+    destination_files <- file.path(directories_$Project, "figure", figure_files) 
+    figure_files      <- list.files(path = figure_dir, full.names = TRUE)
+    file.copy(from=figure_files, to=destination_files, 
+              copy.mode = TRUE)
     markdownToHTML(paste(current_report, ".md", sep =""),
-                   paste(current_report, ".html", sep =""), options=c("use_xhml"))
+                   paste(current_report, ".html", sep =""))
   },
   #' Set directories
   #'  

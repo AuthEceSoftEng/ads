@@ -96,7 +96,7 @@ Server$methods(
     dataset    <- data_prepare_$convertAttributeTypes(dataset, dictionary)
     # define machine learning algortihms used in ensemble
     algorithms <- c()
-    if(!experiment_task_$dis_knn) {
+    if(!(experiment_task_$dis_knn)) {
       algorithms <- c(algorithms, KnnClassifier$new())
     }
     if(!experiment_task_$dis_tree) {
@@ -108,10 +108,9 @@ Server$methods(
     if(!experiment_task_$dis_svm) {
       algorithms <- c(algorithms, SvmClassifier$new())
     }
-    if(!experiment_task_$bayes) {
+    if(!experiment_task_$dis_bayes) {
       algorithms <- c(algorithms, BayesClassifier$new())
     }
-    task       <- list()
     # --- create training and testing partitions ---
     # heuristically define size of testing partition in case user has not requested one
     if(is.na(testing_technique_$ratio)) {
@@ -129,11 +128,11 @@ Server$methods(
       train_dataset   <- dataset[train_indexes, ]
       testing_dataset <- dataset[-train_indexes, ]
       # advice expert for right performance metric
-      if(is.na(experiment_task$performance)) {
+      if(is.na(experiment_task_$performance)) {
         performance_expert        <- Expert$new()
         performance_metric_       <<- performance_expert$choosePerformanceMetric(model_name = model_name, dataset = train_dataset)
       } else {
-        performance_metric_     <<- experiment_task$performance
+        performance_metric_     <<- experiment_task_$performance
       }
       stored_processed_datasets <- list()
       stored_opt_parameters     <- list()
@@ -143,8 +142,8 @@ Server$methods(
       for(classifier in algorithms) {
         expert               <- Expert$new()
         algorithm            <- list(algorithm = class(classifier)[1], parameters = classifier$getModelParameters())
-        task$algorithm       <- algorithm
-        preprocessed_dataset <- expert$choosePreprocessing(train_dataset, task)
+        experiment_task_$algorithm       <<- algorithm
+        preprocessed_dataset <- expert$choosePreprocessing(train_dataset, task = experiment_task_)
         model_name           <- classifier$getModelName()
         # keep processed dataset, name of model and tuning for later use
         stored_processed_datasets[[model_name]] <- preprocessed_dataset
@@ -153,12 +152,8 @@ Server$methods(
         # find metafeatures for parameter tuning
         metafeatures <- mf2_extractor_$get2MetaFeatures(preprocessed_dataset)
         # predict optimal hyperparameters
-        opt_params <- apply(metafeatures , 1, function(x) {
-          temp  <- matrix(x, nrow=1, ncol=ncol(metafeatures), byrow=TRUE)
-          temp  <- data.frame(temp)
-          colnames(temp) = names(metafeatures)
-          opt_params <- optimizer_$optimizeHParam(algorithm  = algorithm$algorithm,
-                                                  parameters = algorithm$parameters, metafeatures = temp)})
+        opt_params <- optimizer_$optimizeHParam(algorithm  = algorithm$algorithm,
+                                                  parameters = algorithm$parameters, metafeatures = metafeatures)
         stored_opt_parameters[[model_name]] <- opt_params
         # divide training dataset into training and tuning partitions
         val_partitions        <- data_prepare_$partitionData(dataset = preprocessed_dataset, technique = list(name = "holdout", ratio = 0.8))
@@ -187,7 +182,6 @@ Server$methods(
         # retrieve opt_params and preprocessed, which have already been computed
         processed_dataset   <- model$trainingData
         opt_param           <- as.list(model$bestTune)
-        opt_param           <- list(opt_param)
         ensemble_classifier <- stored_classifiers[[model_name]]
         # train model of ensemble
         rm(model)
@@ -243,7 +237,6 @@ Server$methods(
       processed_task      <- current_expert$getProcessedTask()
       processed_dataset   <- current_expert$choosePreprocessing(train_dataset, task = processed_task, final = TRUE)
       opt_param           <- as.list(model$bestTune)
-      opt_param           <- list(opt_param)
       ensemble_classifier <- stored_classifiers[[model_name]]
       # train models of ensemble
       model_files         <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param,
@@ -284,7 +277,7 @@ Server$methods(
     experiment_info <- gatherExperimentInfo(classifiers = stored_classifiers, experts,  performance = performance,
                                             roc_pred = roc_pred, ensemble_expert = ensemble_expert)
     file_manipulator_$saveRdata(data = experiment_info, file = "experiment_info.Rdata")
-    file_manipulator_$generateReport(data = experiment_info)
+    file_manipulator_$generateReport(data = experiment_info, type = "experiment")
   },
   #' Gather experiment's information
   #' 
@@ -364,13 +357,19 @@ Server$methods(
   compareAlgorithms = function(...) {
     'Regulates the process of comparing diffenent algorithms'
     # load algorithms' results
-    results_tables <- file_manipulator_$loadBenchmarks(task = experiment_task_)
+    file_manipulator_$setDirectories(directories = directories_)
+    benchmarks <- file_manipulator_$loadBenchmarks( file = experiment_task_$benchmark_file)
     # call Expert's compareModels
     expert <- Expert$new()
-    expert$compareModels(results = results_tables, task = experiment_task_)
+    technique_evaluation <- expert$compareModels(results = benchmarks, task = experiment_task_)
     # store results info 
-    hypothesis_tester    <- expert$getHypothesisTester()
-    technique_evaluation <- hypothesis_tester$getInfo()
+    #hypothesis_tester    <- expert$getHypothesisTester()
+    #technique_evaluation <- hypothesis_tester$getInfo()
+    technique_evaluation$install_dir <- getwd()
+    technique_evaluation$results     <- benchmarks
+    technique_evaluation$p_value     <- technique_evaluation$p.value 
+    file_manipulator_$saveRdata(technique_evaluation, "comparison_info.Rdata")
+    file_manipulator_$generateReport(data = technique_evaluation, type = "compare")
   },
   #' Set experiment's task
   #'

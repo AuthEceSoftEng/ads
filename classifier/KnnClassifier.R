@@ -34,7 +34,8 @@ KnnClassifier$methods(
     optParameters <- expand.grid( k = c(parameters$k))
     model_files <- list()
     for (row in 1:nrow(optParameters)) {
-      current_parameters <- as.data.frame(lapply(optParameters, function(x) x[row]))
+      current_parameters <- as.data.frame(optParameters[row,])
+      colnames(current_parameters) <- colnames(optParameters)
       # train model
       set.seed(seed_)
       trained_model      <- suppressWarnings(train(Class ~ ., data = training_dataset,
