@@ -177,7 +177,8 @@ FileManipulator$methods(
     # create path to dataset file
     dataset_path  <- file.path(workspace_dir, "HPP/metafeatures/training_metafeatures.csv")
     # load dataset file
-    metafeatures$dataset <- read.csv(dataset_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
+    metafeatures$dataset   <- read.csv(dataset_path, header = TRUE, sep=",", stringsAsFactors=FALSE)
+    metafeatures$dataset$X <- NULL
     # create path to parameters file
     parameters_path <- file.path(workspace_dir, "HPP/metafeatures/metafeatures_parameters.Rdata")
     # load parameters file

@@ -195,9 +195,9 @@ mf1Extractor$methods(
   dummyEncode = function(dataset, ...) {
     # recognize attribute types
     file_manipulator <- FileManipulator$new()
-    test_dictionary  <- file_manipulator$loadOrderedDictionary()
-    data_prepare     <- DataPrepare$new(factor_threshold_ = 1)
-    dataset          <- data_prepare$convertAttributeTypes(dataset =  dataset , dictionary = test_dictionary)
+    #test_dictionary  <- file_manipulator$loadOrderedDictionary()
+    #data_prepare     <- DataPrepare$new(factor_threshold_ = 1)
+   # dataset          <- data_prepare$convertAttributeTypes(dataset =  dataset , dictionary = test_dictionary)
     class            <- dataset$Class
     variables        <- names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
     dataset_num      <- dataset[,!(names(dataset) %in% variables)]

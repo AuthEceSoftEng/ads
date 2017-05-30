@@ -138,7 +138,7 @@ Expert$methods(
     if(is.na(processed_task_$inf_replace)) {
       inf_action$rep <-  0
     } else {
-      inf_action$rep <- processed_task_$inf_action
+      inf_action$rep <- processed_task_$inf_replace
     }
     if(is.na(processed_task_$unknown_action)) {
       unknown_action$act <- "replace"
@@ -148,7 +148,7 @@ Expert$methods(
     if(is.na(processed_task_$unknown_replace)) {
       unknown_action$rep <-  0
     } else {
-      unknown_action$rep<- processed_task_$unknown_action
+      unknown_action$rep<- processed_task_$unknown_replace
     }
     dataset        <- inap_remover_$removeInfinites(dataset, inf_action = inf_action)
     dataset        <- inap_remover_$removeUnknown(dataset, unknown_action =  unknown_action)

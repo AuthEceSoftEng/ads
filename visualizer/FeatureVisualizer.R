@@ -57,20 +57,20 @@ FeatureVisualizer <- setRefClass(Class = "FeatureVisualizer",
                                   # save important graphs
                                   # save KNOWLEDGE
                                 },
-                                visualizeCosmos = function(meta_instance = NULL, ...) {
-                                  file_manipulator <- FileManipulator$new()
+                                visualizeCosmos = function(workspace_dir, meta_instance = NULL, ...) {
+                                  file_manipulator <- FileManipulator$new(directories_= list(Workspace = workspace_dir))
                                   metafeatures     <- file_manipulator$loadRepoMetafeatures()
                                   dataset          <- metafeatures$dataset
                                   distance_scores  <- metafeatures$info$distance_scores
-                                  metafeatures     <- scale(dataset)
-                                  means            <- attr(metafeatures, "scaled:center")
-                                  scales           <- attr(metafeatures, "scaled:scale")
-                                  pca_metafeatures <- prcomp(metafeatures)
+                                  means            <- metafeatures$info$means
+                                  scales           <- metafeatures$info$scales
+                                  pca_metafeatures <- prcomp(dataset, center = FALSE)
                                   contained_pca    <- pca_metafeatures$x[,1:3]
                                   x                <- contained_pca[,1]
                                   y                <- contained_pca[,2]
                                   z                <- distance_scores
                                   im               <- interp(x,y,z,duplicate = FALSE,linear = FALSE)
+                                  str(z)
                                   with(im,image.plot(x,y,z, main = "Cosmos", xlab = "PCA1", ylab="PCA2"))
                                   image.plot( zlim=c(0,20), legend.only=TRUE)
                                   if(!is.null(meta_instance)) {

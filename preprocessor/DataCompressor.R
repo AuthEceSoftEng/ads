@@ -90,41 +90,41 @@ DataCompressor$methods(
     variables         <-  names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
     cat_dataset       <-  as.data.frame(dataset[, (names(dataset) %in% variables)])
     # ignore Class
-    cat_dataset$Class <- NULL
-    # apply MDA
-    if(ncol(cat_dataset) != 0) {
-      mca                 <- MCA(cat_dataset, ncp = ncol(cat_dataset), graph=FALSE)
-      if(is.null(number_of_attributes)) { # first time performing MDA
-        st_dev              <- apply(mca$ind$coord, 2, sd)
-        keep                <- (which(cumsum((st_dev)^2) / sum(st_dev^2)>=variance)[1])
-        num_mda_attributes_ <<- keep
-        trans_dataset       <- data.frame(mca$ind$coord)[, 1:keep]
-        colnames(trans_dataset) <- paste("MD", seq(1, keep), sep = "")
-      } else { # applying MDA on test
-        keep                <- number_of_attributes
-        if(ncol(mca$ind$coord) < keep) { # if features are correlated MDA may give fewer MD components
-          diff                                      <- keep - ncol(mca$ind$coord)
-          empty_data_frame                          <- as.data.frame(matrix(nrow = nrow(mca$ind$coord), ncol = diff))
-          empty_data_frame[is.na(empty_data_frame)] <- 0
-          colnames(empty_data_frame)                <- paste("MD", seq((ncol(mca$ind$coord)+1) , keep), sep = "")
-          keep                                      <- ncol(mca$ind$coord)
-          trans_dataset                             <- as.data.frame(mca$ind$coord[, 1:keep])
-          colnames(trans_dataset)                   <- paste("MD", seq(1,ncol(mca$ind$coord)), sep = "")
-          trans_dataset                             <- cbind(trans_dataset, empty_data_frame) # append empty data.frame
-        } else {
-          trans_dataset           <- as.data.frame(mca$ind$coord[, 1:keep])
-          colnames(trans_dataset) <- paste("MD", seq(1,keep), sep = "")
-        } 
-      }
-      # update info_ with info about PCA
-      mda_info  <- list(pertained_variance = variance, number_of_features = keep)
-      info_$MDA <<- mda_info
-    }
-    else {
-      trans_dataset    <- dataset
-    }
-    trans_dataset$Class <- dataset$Class
-    return((trans_dataset))
+    # cat_dataset$Class <- NULL
+    # # apply MDA
+    # if(ncol(cat_dataset) != 0) {
+    #   mca                 <- MCA(cat_dataset, ncp = ncol(cat_dataset), graph=FALSE)
+    #   if(is.null(number_of_attributes)) { # first time performing MDA
+    #     st_dev              <- apply(mca$ind$coord, 2, sd)
+    #     keep                <- (which(cumsum((st_dev)^2) / sum(st_dev^2)>=variance)[1])
+    #     num_mda_attributes_ <<- keep
+    #     trans_dataset       <- data.frame(mca$ind$coord)[, 1:keep]
+    #     colnames(trans_dataset) <- paste("MD", seq(1, keep), sep = "")
+    #   } else { # applying MDA on test
+    #     keep                <- number_of_attributes
+    #     if(ncol(mca$ind$coord) < keep) { # if features are correlated MDA may give fewer MD components
+    #       diff                                      <- keep - ncol(mca$ind$coord)
+    #       empty_data_frame                          <- as.data.frame(matrix(nrow = nrow(mca$ind$coord), ncol = diff))
+    #       empty_data_frame[is.na(empty_data_frame)] <- 0
+    #       colnames(empty_data_frame)                <- paste("MD", seq((ncol(mca$ind$coord)+1) , keep), sep = "")
+    #       keep                                      <- ncol(mca$ind$coord)
+    #       trans_dataset                             <- as.data.frame(mca$ind$coord[, 1:keep])
+    #       colnames(trans_dataset)                   <- paste("MD", seq(1,ncol(mca$ind$coord)), sep = "")
+    #       trans_dataset                             <- cbind(trans_dataset, empty_data_frame) # append empty data.frame
+    #     } else {
+    #       trans_dataset           <- as.data.frame(mca$ind$coord[, 1:keep])
+    #       colnames(trans_dataset) <- paste("MD", seq(1,keep), sep = "")
+    #     } 
+    #   }
+    #   # update info_ with info about PCA
+    #   mda_info  <- list(pertained_variance = variance, number_of_features = keep)
+    #   info_$MDA <<- mda_info
+    # }
+    # else {
+    #   trans_dataset    <- dataset
+    # }
+    # trans_dataset$Class <- dataset$Class
+    return((cat_dataset))
   },
   #' Get number of PCA attributes
   #' 

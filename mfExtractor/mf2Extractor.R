@@ -70,7 +70,9 @@ mf2Extractor$methods(
     dataset$Class    <- NULL
     cat_features     <- names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
     dataset_cat      <- as.data.frame(original_dataset[ , (names(original_dataset) %in% cat_features)])
-    dataset_num      <- dataset[, !(names(dataset) %in% cat_features)]
+    dataset_num      <- as.data.frame(dataset[, !(names(dataset) %in% cat_features)])
+    str(dataset_cat)
+    str(dataset_num)
     if((ncol(dataset_cat) == 0) && (ncol(dataset_num) == 0) ) {
       # empty dataset
       cat("Warning: provided empty dataset for meta-features extraction.")
@@ -78,23 +80,25 @@ mf2Extractor$methods(
     } else if((ncol(dataset_cat) != 0) && (ncol(dataset_num) != 0) ) {
       # dataset with both categorical and numeric features
       feats_num <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_num)
+      feats2_num <- calculate2MetaFeatures(feats_num)
       feats_cat <- mf1_extractor_$calculateStatisticalCategorical(dataset = dataset_cat)
-      result    <- cbind(feats_num, feats_cat)
-      result    <- calculate2MetaFeatures(result)
-      
+      feats2_cat <- calculate2MetaFeatures(feats_cat)
+      result    <- cbind(feats2_num, feats2_cat)
     } else if((ncol(dataset_cat) != 0)) {
       # dataset with only categorical features
       dataset_num <- mf1_extractor_$dummyEncode(dataset_cat)
       feats_num   <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_num)
+      feats2_num <- calculate2MetaFeatures(feats_num)
       feats_cat   <- mf1_extractor_$calculateStatisticalCategorical(dataset = dataset_cat)
-      result      <- cbind(feats_num, feats_cat)
-      result      <- calculate2MetaFeatures(result)
+      feats2_cat <- calculate2MetaFeatures(feats_cat)
+      result      <- cbind(feats2_num, feats2_cat)
     } else if((ncol(dataset_num) != 0) ) {
       # dataset with only numerical features
       feats_num   <- mf1_extractor_$calculateStatisticalNumeric(dataset = dataset_num)
+      feats2_num <- calculate2MetaFeatures(feats_num)
       feats_cat   <- mf1_extractor_$calculateStatisticalCategorical(dataset = dataset_num)
-      result      <- cbind(feats_num, feats_cat)
-      result      <- calculate2MetaFeatures(result)
+      feats2_cat <- calculate2MetaFeatures(feats_cat)
+      result      <- cbind(feats2_num, feats2_cat)
     }
     # extract simple meta-features
     simpleFeats           <-  mf1_extractor_$calculateSimple(original_dataset)
@@ -107,7 +111,7 @@ mf2Extractor$methods(
       x
     }  )
     # calculate anticipation metric
-    anticipation_metric_ <<- calculateAnticipationMetric(dataset = result)
+    #anticipation_metric_ <<- calculateAnticipationMetric(dataset = result)
     return(result)
   },
   #' Calculate anticipation metric
@@ -123,6 +127,7 @@ mf2Extractor$methods(
   #' @return list with information about anticipation metric and if it indicates an outlier
   calculateAnticipationMetric = function(dataset, ... ) {
     distance_info <- list()
+    str(dataset)
     # load metafeatures from repo
     repo_metafeatures <- file_manipulator_$loadRepoMetafeatures()
     # preprocess current dataset
@@ -130,6 +135,7 @@ mf2Extractor$methods(
     means   <- repo_metafeatures$info$means
     scales  <- repo_metafeatures$info$scales
     dataset <- dataset[, names(dataset) %in% names(repo_metafeatures$info$means)]
+    str(dataset)
     dataset <- scale(dataset, center = means, scale = scales)
     # calculate distance from all training examples
     distance <- apply(repo_metafeatures$dataset, 1, function(x) {sqrt(sum((x - dataset) ^ 2))})
