@@ -111,7 +111,7 @@ mf2Extractor$methods(
       x
     }  )
     # calculate anticipation metric
-    #anticipation_metric_ <<- calculateAnticipationMetric(dataset = result)
+    anticipation_metric_ <<- calculateAnticipationMetric(dataset = result)
     return(result)
   },
   #' Calculate anticipation metric
