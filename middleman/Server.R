@@ -42,7 +42,8 @@ Server <- setRefClass(Class = "Server",
                         performance_visualizer_ = "PerformanceVisualizer",
                         feature_visualizer_     = "FeatureVisualizer",
                         performance_metric_     = "character",
-                        testing_technique_      = "list"
+                        testing_technique_      = "list",
+                        dataset_name_           = "character"
                         )
                       )
 
@@ -70,9 +71,10 @@ Server$methods(
                                  "model/model_files", "model/specifications/results",
                                  "testing/statistical_log", "testing/statistical_tests"
     )
+    dataset_name_        <<- dataset_name
     # attach project name as parent folder
     subdirs_list         <- paste(project_dir, subdirs_list, sep = "/")
-    #create subdirectories
+    # create subdirectories
     lapply(subdirs_list, dir.create, recursive = TRUE)
   },
   #' Perform experiment
@@ -113,6 +115,8 @@ Server$methods(
     }
     # --- create training and testing partitions ---
     # heuristically define size of testing partition in case user has not requested one
+    testing_technique_ <<- list( name = experiment_task_$testing_technique,
+                                 ratio = experiment_task_$testing_technique_ratio) 
     if(is.na(testing_technique_$ratio)) {
       partition_expert          <- Expert$new()
       testing_technique_$ratio  <<- partition_expert$getPartitionRatio(testing_technique = testing_technique_,
@@ -164,6 +168,7 @@ Server$methods(
                               file_manipulator = file_manipulator_)
       }
       # tune ensemble
+      ensembler_$setM(M = experiment_task_$ensemble_size)
       ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
                                              performance_metric = performance_metric_, project_dir = directories_$Project)
       # -------- re-train ensemble_models on training partition --------
@@ -223,9 +228,11 @@ Server$methods(
                                                                   predicted_probs = predicted_probabilities,
                                                                   performance_metric = performance_metric_)
       ensemble_models_total     <- c(ensemble_models_total, ensemble_models)
+      file_manipulator_$clearModels()
     }
     # re-train ensemble's models on whole dataset for storing
     final_models   <- list()
+    expert_tasks   <- list()
     counter <- 1
     for(k in seq(1,length(ensemble_models_total))) {
       # get algorithm's name
@@ -235,6 +242,7 @@ Server$methods(
       # retrieve opt_params and preprocessed, which have already been computed
       current_expert      <- stored_experts[[model_name]]
       processed_task      <- current_expert$getProcessedTask()
+      expert_tasks[[k]]  <- processed_task 
       processed_dataset   <- current_expert$choosePreprocessing(train_dataset, task = processed_task, final = TRUE)
       opt_param           <- as.list(model$bestTune)
       ensemble_classifier <- stored_classifiers[[model_name]]
@@ -254,7 +262,7 @@ Server$methods(
     # save all useful information produced during the experiment
     saveExperimentInfo(performance = ensemble_performance, roc_pred = roc_pred,
                        experts = stored_experts, ensemble_expert = ensemble_expert,
-                       stored_classifiers = stored_classifiers)
+                       stored_classifiers = stored_classifiers, expert_tasks = expert_tasks)
   },
   #' Save experiment's information
   #' 
@@ -269,13 +277,14 @@ Server$methods(
   #' @param experts expert of each algorithm
   #' @param ensemble_expert expert of ensemble
   #' @param stored_classifiers clasifier of each algorithm
-  saveExperimentInfo = function(performance, roc_pred, experts, ensemble_expert, stored_classifiers, ...) {
+  saveExperimentInfo = function(performance, roc_pred, experts, ensemble_expert, stored_classifiers, expert_tasks,  ...) {
     'Saves information about ensemble, individual models, pipeline of experiment and plots'
     # save RData of ensemble
     #file_manipulator_$saveRdata(data = ensemble_info, file = "ensemble_info.Rdata")
     # save RData of experiment
     experiment_info <- gatherExperimentInfo(classifiers = stored_classifiers, experts,  performance = performance,
-                                            roc_pred = roc_pred, ensemble_expert = ensemble_expert)
+                                            roc_pred = roc_pred, ensemble_expert = ensemble_expert,
+                                            expert_tasks = expert_tasks)
     file_manipulator_$saveRdata(data = experiment_info, file = "experiment_info.Rdata")
     file_manipulator_$generateReport(data = experiment_info, type = "experiment")
   },
@@ -293,8 +302,10 @@ Server$methods(
   #' @param performance performance of ensemble in each fold
   #' @param roc_pred predictions to make a ROC curve
   #' @param ensemble_expert expert of ensemble
-  gatherExperimentInfo = function(classifiers, experts, performance, roc_pred, ensemble_expert,  ...) {
+  gatherExperimentInfo = function(classifiers, experts, performance, roc_pred, ensemble_expert, expert_tasks,  ...) {
     experiment_info                     <- list()
+    # gather name of dataset
+    experiment_info$dataset_name        <- dataset_name_
     # gather anticipation metric
     experiment_info$anticipation_metric <- mf2_extractor_$getAnticipationMetric()
     # gather data preparation info
@@ -343,6 +354,8 @@ Server$methods(
     metrics                     <- performance_evaluator$getInfo()
     experiment_info$testing     <- list(model_validation = list(metrics = metrics,
                                                                 technique = testing_technique_ ))
+    # gather info for predicting
+    experiment_info$task_for_prediction <- expert_tasks 
     # info about installation directory
     experiment_info$install_dir <- getwd()
     return(experiment_info)
@@ -370,6 +383,49 @@ Server$methods(
     technique_evaluation$p_value     <- technique_evaluation$p.value 
     file_manipulator_$saveRdata(technique_evaluation, "comparison_info.Rdata")
     file_manipulator_$generateReport(data = technique_evaluation, type = "compare")
+  },
+  #' Predict dataset
+  #'
+  #' Predicts class of input dataset using trained ensemble of models under define project. If Class
+  #' is included in input dataset 
+  #' 
+  #' @name compareAlgorithms
+  #' @alias compareAlgorithms
+  #'
+  #' @param dataset_name name of dataset
+  #' @param project_name name of project
+  #' 
+  #' @return 
+  predictDataset = function(dataset_name, project_name, workspace_dir, ...) {
+    'Regulates the process of comparing diffenent algorithms'
+    # check if project exists and is completed
+    project_name         <- paste("project", project_name, sep = "_")
+    experiment_info_file <- file.path(workspace_dir, project_name, "experiment_info.Rdata")
+    if(!file.exists(experiment_info_file)) {
+      cat("ERROR: project does not exist or is not completed.")
+    } else {
+      # load dataset
+      file_manipulator_$setDirectories(directories = list(Workspace = workspace_dir))
+      dataset <- file_manipulator_$loadDataset(dataset_name)
+      # preprocess dataset
+      dictionary <- file_manipulator_$loadOrderedDictionary()
+      dataset    <- data_prepare_$convertAttributeTypes(dataset, dictionary)
+      dataset$Class <- NULL
+      load(experiment_info_file)
+      task       <- data$task_for_prediction
+      datasets   <- list()
+      for(i in seq(1, length(task))) {
+        expert_$setProcessedTask(task[[i]])
+        datasets[[i]]    <- expert_$applyPreprocessing(dataset = dataset)
+      }
+      # get predictions of ensemble
+      ensembler               <- Ensembler$new()
+      predictions             <- ensembler$getEnsemblePredictions(datasets = datasets, type = "raw",
+                                                                  project_dir = file.path(workspace_dir,project_name))
+      # save predictions file
+      write.csv(as.data.frame(predictions), file = file.path(workspace_dir, project_name, "predictions.csv"),
+                row.names = FALSE)
+      }
   },
   #' Set experiment's task
   #'
@@ -405,7 +461,8 @@ Server$methods(
     performance_visualizer_ <<- PerformanceVisualizer$new()
     feature_visualizer_     <<- FeatureVisualizer$new()
     performance_metric_     <<- ""
-    testing_technique_      <<- list(name = "kfold", ratio = 0.9)
+    testing_technique_      <<- list(name = "kfold", ratio = 0.8)
+    dataset_name_           <<- ""
     callSuper(...)
     .self
   }

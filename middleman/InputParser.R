@@ -50,15 +50,28 @@ InputParser$methods(
                             performance = options$performance,
                             testing_technique_ratio = options$testing_technique_ratio,
                             benchmark_file = options$benchmark_file
-                            
                             )
-    server_$createProject( dataset_name = dataset_file,
-                           project_name = project_name,
-                           workspace_dir = options$workspace)
     server_$setExperimentTask(experiment_task = experiment_task)
-    if(options$train) server_$trainScientist() # not implemented
-    if(options$experiment) server_$performExperiment(dataset_name = dataset_file)
-    if(options$compare) server_$compareAlgorithms() # not implemented
+    if(options$train) {
+      server_$trainScientist() # not implemented
+    } 
+    if(options$experiment) {
+      server_$createProject( dataset_name = dataset_file,
+                             project_name = project_name,
+                             workspace_dir = options$workspace)
+      server_$performExperiment(dataset_name = dataset_file)
+    } 
+    if(options$compare) {
+      server_$createProject( dataset_name = dataset_file,
+                             project_name = project_name,
+                             workspace_dir = options$workspace)
+      server_$compareAlgorithms() 
+    } 
+    if(options$predict) {
+      server_$predictDataset(dataset_name = dataset_file, 
+                             project_name = project_name,
+                             workspace_dir = options$workspace)
+    }
   },
   initialize=function(...) {
     server_ <<- Server$new()

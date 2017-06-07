@@ -71,8 +71,6 @@ mf2Extractor$methods(
     cat_features     <- names(dataset[sapply(dataset,class) == "factor" | (sapply(dataset,function(x) class(x)[1])  == "ordered")])
     dataset_cat      <- as.data.frame(original_dataset[ , (names(original_dataset) %in% cat_features)])
     dataset_num      <- as.data.frame(dataset[, !(names(dataset) %in% cat_features)])
-    str(dataset_cat)
-    str(dataset_num)
     if((ncol(dataset_cat) == 0) && (ncol(dataset_num) == 0) ) {
       # empty dataset
       cat("Warning: provided empty dataset for meta-features extraction.")

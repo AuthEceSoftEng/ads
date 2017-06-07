@@ -94,12 +94,16 @@ FileManipulator$methods(
   #' @alias clearModels
   #' 
   #' @param models_to_remove names of models to remove
-  clearModels = function(models_to_remove,...) {
+  clearModels = function(models_to_remove = NULL,...) {
     'Clears models in directory model/model_files of current project'
     project_dir      <- directories_$Project
     # create path to file
     models_path      <- paste(project_dir, "model/model_files", sep = "/" )
-    models_to_delete <- as.vector(models_to_remove)
+    if(is.null(models_to_remove)) {
+      models_to_delete <- list.files(path = models_path)
+    } else {
+      models_to_delete <- as.vector(models_to_remove)
+    }
     unlink(models_to_delete)
   },
   #' Load ordered dictionary

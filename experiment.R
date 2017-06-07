@@ -62,7 +62,8 @@ option_list <- list(
   make_option( c("-t_t_r", "--testing_technique_ratio"), type = "numeric", help = "ratio of training instances",
                default = NA , metavar = "numeric"),
   make_option( c("-bf", "--benchmark_file"), type = "character", help = "file containing benchmarks",
-               default = NA , metavar = "csv")
+               default = NA , metavar = "csv"),
+  make_option( c( "--predict"), action = "store_true", dest = "predict", default = FALSE)
 );
 
 opt_parser <- OptionParser(option_list=option_list);

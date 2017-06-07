@@ -143,11 +143,12 @@ Optimizer$methods(
     return(info_)
   },
   initialize = function(...) {
-    model_file_        <<- "model.RData"
-    parameters_file_   <<- "parameters.csv"
-    file_manipulator_  <<- FileManipulator$new()
-    seed_              <<- 1
-    info_              <<- list(size = 0, results = as.data.frame(matrix(nrow =4, ncol = 6)))
+    model_file_             <<- "model.RData"
+    parameters_file_        <<- "parameters.csv"
+    file_manipulator_       <<- FileManipulator$new()
+    seed_                   <<- 1
+    info_                   <<- list(size = 0, results = as.data.frame(matrix(nrow =4, ncol = 6)))
+    colnames(info_$results) <<- c("k", "cp", "C", "sigma","size", "decay")
     callSuper(...)
     .self
   }

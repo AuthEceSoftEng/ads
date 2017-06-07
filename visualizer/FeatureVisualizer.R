@@ -70,7 +70,6 @@ FeatureVisualizer <- setRefClass(Class = "FeatureVisualizer",
                                   y                <- contained_pca[,2]
                                   z                <- distance_scores
                                   im               <- interp(x,y,z,duplicate = FALSE,linear = FALSE)
-                                  str(z)
                                   with(im,image.plot(x,y,z, main = "Cosmos", xlab = "PCA1", ylab="PCA2"))
                                   image.plot( zlim=c(0,20), legend.only=TRUE)
                                   if(!is.null(meta_instance)) {

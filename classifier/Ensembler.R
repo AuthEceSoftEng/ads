@@ -306,6 +306,14 @@ Ensembler$methods(
     'Returns information about ensemble.'
     return(info_)
   },
+  #' Set M
+  #' 
+  #' @name setM
+  #' @alias setM
+  setM = function(M, ...) {
+    'Returns information about ensemble.'
+    M_ <<- M
+  },
   #' Compress ensemble into a deep neural network
   #' 
   #' Information includes tuning parameters and evolution of ensemble.

@@ -357,6 +357,15 @@ Expert$methods(
   getProcessedTask = function(...) {
     return(processed_task_)
   }, 
+  #' Set processed task
+  #' 
+  #' @name setProcessedTask
+  #' @alias setProcessedTask
+  #' 
+  #' @param task list of information about task
+  setProcessedTask = function(task, ...) {
+    processed_task_ <<- task
+  }, 
   #' Check if t-test is applicable
   #' 
   #' @name tTestApplicable
