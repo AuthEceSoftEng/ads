@@ -115,8 +115,12 @@ Server$methods(
     }
     # --- create training and testing partitions ---
     # heuristically define size of testing partition in case user has not requested one
-    testing_technique_ <<- list( name = experiment_task_$testing_technique,
-                                 ratio = experiment_task_$testing_technique_ratio) 
+    if(!is.na(experiment_task_$testing_technique_)) {
+      testing_technique_$name <<-experiment_task_$testing_technique
+    }
+    if(!is.na(experiment_task_$testing_technique_ratio)) {
+      testing_technique_$ratio <<-experiment_task_$testing_technique_ratio
+    }
     if(is.na(testing_technique_$ratio)) {
       partition_expert          <- Expert$new()
       testing_technique_$ratio  <<- partition_expert$getPartitionRatio(testing_technique = testing_technique_,
