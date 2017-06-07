@@ -172,7 +172,7 @@ Server$methods(
                               file_manipulator = file_manipulator_)
       }
       # tune ensemble
-      ensembler_$setM(M = experiment_task_$ensemble_size)
+      if(!is.na(experiment_task_$ensemble_size)) ensembler_$setM(M = experiment_task_$ensemble_size)
       ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
                                              performance_metric = performance_metric_, project_dir = directories_$Project)
       # -------- re-train ensemble_models on training partition --------
