@@ -76,10 +76,11 @@ FileManipulator$methods(
   loadBenchmarks = function(file, ...) {
     'Loads results of algorithms'
     if(is.na(file)) {
-      benchmark_file <- "benchmarks/thesis_benchmarks.csv"
+      benchmark_file <- "thesis_benchmarks.csv"
     } else {
       benchmark_file <- file
     }
+    benchmark_file <- file.path("benchmarks", benchmark_file)
     benchmark_file <- file.path(directories_$Workspace, benchmark_file)
     benchmarks     <- read.csv(benchmark_file,
                               header = TRUE, sep=",", stringsAsFactors=FALSE
