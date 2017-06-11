@@ -73,8 +73,9 @@ FeatureVisualizer <- setRefClass(Class = "FeatureVisualizer",
                                   with(im,image.plot(x,y,z, main = "Cosmos", xlab = "PCA1", ylab="PCA2"))
                                   image.plot( zlim=c(0,20), legend.only=TRUE)
                                   if(!is.null(meta_instance)) {
+                                    meta_instance <- as.data.frame(meta_instance[, colnames(meta_instance) %in% colnames(metafeatures$dataset)])
                                     meta_instance <- as.data.frame(scale(meta_instance, center = means, scale = scales))
-                                    total_dataset <- rbind(metafeatures, meta_instance)
+                                    total_dataset <- rbind(metafeatures$dataset, meta_instance)
                                     meta_instance_pca <- prcomp(total_dataset)
                                     x <- meta_instance_pca$x[nrow(total_dataset),1]
                                     y <- meta_instance_pca$x[nrow(total_dataset),2]

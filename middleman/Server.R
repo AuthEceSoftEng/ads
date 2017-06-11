@@ -65,6 +65,8 @@ Server$methods(
     directories_         <<- list( Workspace = workspace_dir)
     # if project_name is NULL give name of dataset
     subDir               <- paste("project", project_name, sep = "_")
+    # add timestamp 
+    subDir               <- paste(subDir, format(Sys.time(), "%y-%m-%d_%H:%M:%S "), sep = "_")
     project_dir          <- file.path(mainDir, subDir)
     directories_$Project <<- project_dir
     subdirs_list         <- list("features/datasets", "features/data_visualization",
@@ -266,7 +268,8 @@ Server$methods(
     # save all useful information produced during the experiment
     saveExperimentInfo(performance = ensemble_performance, roc_pred = roc_pred,
                        experts = stored_experts, ensemble_expert = ensemble_expert,
-                       stored_classifiers = stored_classifiers, expert_tasks = expert_tasks)
+                       stored_classifiers = stored_classifiers, expert_tasks = expert_tasks,
+                       metafeatures = metafeatures)
   },
   #' Save experiment's information
   #' 
@@ -281,14 +284,16 @@ Server$methods(
   #' @param experts expert of each algorithm
   #' @param ensemble_expert expert of ensemble
   #' @param stored_classifiers clasifier of each algorithm
-  saveExperimentInfo = function(performance, roc_pred, experts, ensemble_expert, stored_classifiers, expert_tasks,  ...) {
+  saveExperimentInfo = function(performance, roc_pred, experts, ensemble_expert, stored_classifiers, expert_tasks, 
+                                metafeatures, ...) {
     'Saves information about ensemble, individual models, pipeline of experiment and plots'
     # save RData of ensemble
     #file_manipulator_$saveRdata(data = ensemble_info, file = "ensemble_info.Rdata")
     # save RData of experiment
     experiment_info <- gatherExperimentInfo(classifiers = stored_classifiers, experts,  performance = performance,
                                             roc_pred = roc_pred, ensemble_expert = ensemble_expert,
-                                            expert_tasks = expert_tasks)
+                                            expert_tasks = expert_tasks,
+                                            metafeatures = metafeatures)
     file_manipulator_$saveRdata(data = experiment_info, file = "experiment_info.Rdata")
     file_manipulator_$generateReport(data = experiment_info, type = "experiment")
   },
@@ -306,8 +311,11 @@ Server$methods(
   #' @param performance performance of ensemble in each fold
   #' @param roc_pred predictions to make a ROC curve
   #' @param ensemble_expert expert of ensemble
-  gatherExperimentInfo = function(classifiers, experts, performance, roc_pred, ensemble_expert, expert_tasks,  ...) {
+  gatherExperimentInfo = function(classifiers, experts, performance, roc_pred, ensemble_expert, expert_tasks, 
+                                  metafeatures, ...) {
     experiment_info                     <- list()
+    # gather metafeatures of dataset
+    experiment_info$metafeatures        <- metafeatures
     # gather name of dataset
     experiment_info$dataset_name        <- dataset_name_
     # gather anticipation metric
