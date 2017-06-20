@@ -27,7 +27,7 @@ SvmClassifier$methods(
   #' @param file_manipulator an instance of Class \code{\link{FileManipulator}}.
   #' 
   #' @return names of files containing saved models
-  trainModel = function(training_dataset, parameters, project_dir, file_manipulator) {
+  trainModel = function(training_dataset, parameters, project_dir, file_manipulator, current_fold) {
       'Train SVM classification models. The names of trained models are returned.'
     # transform parameters to useful form
     optParameters <- expand.grid( C = c(parameters$C),
@@ -50,7 +50,7 @@ SvmClassifier$methods(
       }
       colnames(trained_model$trainingData)[which(names(trained_model$trainingData) == ".outcome")] <- "Class"
       # save model
-      model_file <- file_manipulator$saveModel(model = trained_model, model_name = model_name_)
+      model_file <- file_manipulator$saveModel(model = trained_model, model_name = model_name_, current_fold)
       # keep name of file
       model_files[[row]] <- model_file
     }

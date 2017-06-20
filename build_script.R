@@ -8,6 +8,18 @@ library_path <- "lib"
 dir.create(library_path, showWarnings = FALSE)
 repos_path <- "http://cran.rstudio.com/"
 
+if(!require(doParallel))
+{
+  print("You are missing the package 'doParallel', we will now try to install it...")
+  install.packages("doParallel", repos = repos_path, lib = library_path)
+  library(doParallel)
+}
+if(!require(foreach))
+{
+  print("You are missing the package 'foreach', we will now try to install it...")
+  install.packages("foreach", repos = repos_path, lib = library_path)
+  library(foreach)
+}
 if(!require(PMCMR))
 {
   print("You are missing the package 'PMCMR', we will now try to install it...")

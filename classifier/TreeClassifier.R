@@ -14,7 +14,7 @@ TreeClassifier <- setRefClass(Class = "TreeClassifier",
 )
 
 TreeClassifier$methods(
-  trainModel = function(training_dataset, parameters, file_manipulator) {
+  trainModel = function(training_dataset, parameters, file_manipulator, current_fold) {
     'Train tree classification models. The names of trained models are returned.'
     # define parameters
     optParameters <- expand.grid( cp = c(parameters$cp))
@@ -30,7 +30,7 @@ TreeClassifier$methods(
       )
       colnames(trained_model$trainingData)[which(names(trained_model$trainingData) == ".outcome")] <- "Class"
       # save model
-      model_file <- file_manipulator$saveModel(model = trained_model, model_name = model_name_)
+      model_file <- file_manipulator$saveModel(model = trained_model, model_name = model_name_, current_fold)
       # keep name of file
       model_files[[row]] <- model_file
     }

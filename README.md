@@ -48,6 +48,13 @@ will exclude Support Vector Machines from being used in the ensemble.
 
 instructs to replace all NAs with zero during preprocessing.
 
+Parallel execution of testing folds is supported upon request:
+
+`Rscript experiment.R -e --dataset crx.csv --testing_technique holdout --testing_technique_ratio 0.9 --cores 2`
+
+will perform parallely 10-fold cross-validation using 2 cores. Note that the number of cores you request must be available on your machine.
+
+
 After the completion of an experiment one can use the produced ensemble in order to predict the class of a dataset. (Note that the features of the dataset should coincide with the features of the dataset used to perform the experiment. Also, if a feature named Class is included, it will be ignored.)
 
 `Rscript experiment.R --predict --project crx --dataset crx.csv`

@@ -95,11 +95,12 @@ FileManipulator$methods(
   #' @alias clearModels
   #' 
   #' @param models_to_remove names of models to remove
-  clearModels = function(models_to_remove = NULL,...) {
+  clearModels = function(models_to_remove = NULL, current_fold, ...) {
     'Clears models in directory model/model_files of current project'
     project_dir      <- directories_$Project
     # create path to file
     models_path      <- paste(project_dir, "model/model_files", sep = "/" )
+    models_path      <- file.path(models_path, current_fold)
     if(is.null(models_to_remove)) {
       models_to_delete <- list.files(path = models_path)
     } else {
@@ -135,7 +136,7 @@ FileManipulator$methods(
   #' @alias saveModel
   #' 
   #' @return model path
-  saveModel = function(model, model_name, ...) {
+  saveModel = function(model, model_name, current_fold, ...) {
     'Saves a trained machine learning model'
     model_file <- model_name
     parameters <- model$bestTune
@@ -145,7 +146,7 @@ FileManipulator$methods(
     model_file  <- paste(model_file, "model.RData", sep = "_")
     project_dir <- directories_$Project
     # create path to file
-    model_path  <- paste(project_dir,"model/model_files", model_file, sep = "/")
+    model_path  <- paste(project_dir,"model/model_files", current_fold, model_file, sep = "/")
     save(model, file = model_path)
     return(model_path)
   },

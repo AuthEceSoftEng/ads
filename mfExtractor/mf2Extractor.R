@@ -125,7 +125,6 @@ mf2Extractor$methods(
   #' @return list with information about anticipation metric and if it indicates an outlier
   calculateAnticipationMetric = function(dataset, ... ) {
     distance_info <- list()
-    str(dataset)
     # load metafeatures from repo
     repo_metafeatures <- file_manipulator_$loadRepoMetafeatures()
     # preprocess current dataset
@@ -133,7 +132,6 @@ mf2Extractor$methods(
     means   <- repo_metafeatures$info$means
     scales  <- repo_metafeatures$info$scales
     dataset <- dataset[, names(dataset) %in% names(repo_metafeatures$info$means)]
-    str(dataset)
     dataset <- scale(dataset, center = means, scale = scales)
     # calculate distance from all training examples
     distance <- apply(repo_metafeatures$dataset, 1, function(x) {sqrt(sum((x - dataset) ^ 2))})

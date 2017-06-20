@@ -84,9 +84,9 @@ GenericClassifier$methods(
   #' @param project_dir directory of current project
   #' 
   #' @return number of models
-  getNumModels = function(project_dir, ... ) {
+  getNumModels = function(project_dir, current_fold,  ... ) {
     'Returns the number of models in directory model/model_files.'
-    return(length(getModels(project_dir)))
+    return(length(getModels(project_dir, current_fold)))
   },
   #' Returning trained models
   #' 
@@ -96,10 +96,10 @@ GenericClassifier$methods(
   #' @param project_dir directory of current project
   #' 
   #' @return a list of trained model files
-  getModels = function(project_dir, ...) {
+  getModels = function(project_dir, current_fold, ...) {
     'Returns the models in directory model/model_files.'
     model_files_directory <- "model/model_files"
-    model_files_directory <- file.path(project_dir, model_files_directory)
+    model_files_directory <- file.path(project_dir, model_files_directory, current_fold)
     model_files           <- list.files(model_files_directory)
     model_files           <- file.path(model_files_directory, model_files)
     return(model_files)

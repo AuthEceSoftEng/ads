@@ -63,7 +63,9 @@ option_list <- list(
                default = NA , metavar = "numeric"),
   make_option( c("-bf", "--benchmark_file"), type = "character", help = "file containing benchmarks",
                default = NA , metavar = "csv"),
-  make_option( c( "--predict"), action = "store_true", dest = "predict", default = FALSE)
+  make_option( c( "--predict"), action = "store_true", dest = "predict", default = FALSE),
+  make_option( c("--cores"), type = "numeric", help = "number of cores",
+               default = 1, metavar = "numeric")
 );
 
 opt_parser <- OptionParser(option_list=option_list);

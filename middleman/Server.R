@@ -66,7 +66,7 @@ Server$methods(
     # if project_name is NULL give name of dataset
     subDir               <- paste("project", project_name, sep = "_")
     # add timestamp 
-    subDir               <- paste(subDir, format(Sys.time(), "%y-%m-%d_%H:%M:%S "), sep = "_")
+    subDir               <- paste(subDir, format(Sys.time(), "%y_%m_%d_%H_%M_%S"), sep = "_")
     project_dir          <- file.path(mainDir, subDir)
     directories_$Project <<- project_dir
     subdirs_list         <- list("features/datasets", "features/data_visualization",
@@ -130,10 +130,19 @@ Server$methods(
     }
     partitions            <- data_prepare_$partitionData(dataset, technique = testing_technique_)
     # -------- begin processing of folds --------
-    ensemble_models_total <- list()
+    ensemble_models_total <- c()
     ensemble_performance  <- list()
     roc_pred              <- c()
-    for(i in seq(1, ncol(partitions))) {
+    #setup parallel backend to use many processors
+    total_dir    <- "total"
+    registerDoParallel(experiment_task_$cores)
+    fold_results <-    foreach(i=seq(1, ncol(partitions))) %dopar% {
+      # create directory of current fold
+      fold_dir     <- file.path(directories_$Project, "model/model_files")
+      dir.create(file.path(fold_dir, "total")) 
+      current_fold <- paste("fold", i, sep ="_") 
+      fold_dir     <- file.path(fold_dir, current_fold)
+      dir.create(fold_dir)
       train_indexes   <- partitions[,i]
       train_dataset   <- dataset[train_indexes, ]
       testing_dataset <- dataset[-train_indexes, ]
@@ -171,16 +180,17 @@ Server$methods(
         ensemble_test_dataset <- preprocessed_dataset[-val_partitions[,1], ]
         # train optimized model by calling each classifier's trainModel and save it under project's directory
         classifier$trainModel(training_dataset = training_dataset, parameters = opt_params,
-                              file_manipulator = file_manipulator_)
+                              file_manipulator = file_manipulator_, current_fold = current_fold)
       }
       # tune ensemble
       if(!is.na(experiment_task_$ensemble_size)) ensembler_$setM(M = experiment_task_$ensemble_size)
       ensemble_models <- ensembler_$ensemble(classifier = algorithms[[1]], test_dataset = ensemble_test_dataset,
-                                             performance_metric = performance_metric_, project_dir = directories_$Project)
+                                             performance_metric = performance_metric_, project_dir = directories_$Project,
+                                             current_fold = current_fold)
       # -------- re-train ensemble_models on training partition --------
-      total_models       <- classifier$getModels(project_dir = directories_$Project)
+      total_models       <- classifier$getModels(project_dir = directories_$Project, current_fold = current_fold)
       unused_models      <- setdiff(total_models, ensemble_models)
-      file_manipulator_$clearModels(models_to_remove = unused_models)
+      file_manipulator_$clearModels(models_to_remove = unused_models, current_fold = current_fold)
       models_for_testing <- list()
       final_datasets     <- list()
       test_datasets      <- list()
@@ -197,8 +207,8 @@ Server$methods(
         # train model of ensemble
         rm(model)
         model_files         <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param,
-                                                                      file_manipulator = file_manipulator_
-        )
+                                                                      file_manipulator = file_manipulator_, current_fold = total_dir
+                                                              )
         final_datasets[[k]]     <- processed_dataset
         current_expert          <- stored_experts[[model_name]]
         current_test_dataset    <- current_expert$applyPreprocessing(dataset = testing_dataset)
@@ -221,9 +231,9 @@ Server$methods(
       # get ensemble predictions
       ensembler               <- Ensembler$new()
       predictions             <- ensembler$getEnsemblePredictions(datasets = test_datasets, type = "raw",
-                                                                  project_dir = directories_$Project)
+                                                                  project_dir = directories_$Project, current_fold = current_fold)
       predicted_probabilities <- ensembler$getEnsemblePredictions(dataset = test_datasets, type = "prob",
-                                                                  project_dir = directories_$Project)
+                                                                  project_dir = directories_$Project, current_fold= current_fold)
       # report ensemble's performance
       ensemble_expert           <- Expert$new()
       ensemble_expert$processTask(task = list())
@@ -233,43 +243,48 @@ Server$methods(
                                                                   actual_class = test_datasets[[1]]$Class,
                                                                   predicted_probs = predicted_probabilities,
                                                                   performance_metric = performance_metric_)
-      ensemble_models_total     <- c(ensemble_models_total, ensemble_models)
-      file_manipulator_$clearModels()
+      ensemble_models_total     <- c(ensemble_models_total, unlist(ensemble_models))
+      file_manipulator_$clearModels(current_fold = current_fold)
+      return(list(ensemble_models_total = ensemble_models_total,stored_experts = stored_experts,
+                  stored_classifiers =stored_classifiers, ensemble_performance = ensemble_performance, roc_pred =roc_pred,
+                  ensemble_expert =  ensemble_expert, metafeatures = metafeatures, train_dataset = train_dataset,
+                  model_performances = model_performances))
     }
+    fold_results <- fold_results[[1]]
     # re-train ensemble's models on whole dataset for storing
     final_models   <- list()
     expert_tasks   <- list()
     counter <- 1
-    for(k in seq(1,length(ensemble_models_total))) {
+    for(k in seq(1,length(fold_results$ensemble_models_total))) {
       # get algorithm's name
-      selected_model <- ensemble_models_total[[k]]
+      selected_model <- fold_results$ensemble_models_total[k]
       load(selected_model)
       model_name     <- model$method
       # retrieve opt_params and preprocessed, which have already been computed
-      current_expert      <- stored_experts[[model_name]]
+      current_expert      <- fold_results$stored_experts[[model_name]]
       processed_task      <- current_expert$getProcessedTask()
-      expert_tasks[[k]]  <- processed_task 
-      processed_dataset   <- current_expert$choosePreprocessing(train_dataset, task = processed_task, final = TRUE)
+      expert_tasks[[k]]   <- processed_task 
+      processed_dataset   <- current_expert$choosePreprocessing(fold_results$train_dataset, task = processed_task, final = TRUE)
       opt_param           <- as.list(model$bestTune)
-      ensemble_classifier <- stored_classifiers[[model_name]]
+      ensemble_classifier <- fold_results$stored_classifiers[[model_name]]
       # train models of ensemble
       model_files         <- ensemble_classifier$trainModel(training_dataset = processed_dataset, parameters = opt_param,
-                                                                  file_manipulator = file_manipulator_)
+                                                                  file_manipulator = file_manipulator_, current_fold = total_dir)
       models <- list()
       # append testing performance to each model
       for(m in 1:length(model_files)) {
         model <- model_files[[m]]
         load(model)
-        model$performance_metric <- model_performances[k]
+        model$performance_metric <- fold_results$model_performances[k]
         models[[m]] <- model
       }
-      lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method ))
+      lapply(models, function(x) file_manipulator_$saveModel(model = x, model_name = x$method, current_fold = total_dir ))
     }
     # save all useful information produced during the experiment
-    saveExperimentInfo(performance = ensemble_performance, roc_pred = roc_pred,
-                       experts = stored_experts, ensemble_expert = ensemble_expert,
-                       stored_classifiers = stored_classifiers, expert_tasks = expert_tasks,
-                       metafeatures = metafeatures)
+    saveExperimentInfo(performance = fold_results$ensemble_performance, roc_pred = fold_results$roc_pred,
+                       experts = fold_results$stored_experts, ensemble_expert = fold_results$ensemble_expert,
+                       stored_classifiers =fold_results$stored_classifiers, expert_tasks = expert_tasks,
+                       metafeatures = fold_results$metafeatures)
   },
   #' Save experiment's information
   #' 
@@ -287,9 +302,7 @@ Server$methods(
   saveExperimentInfo = function(performance, roc_pred, experts, ensemble_expert, stored_classifiers, expert_tasks, 
                                 metafeatures, ...) {
     'Saves information about ensemble, individual models, pipeline of experiment and plots'
-    # save RData of ensemble
-    #file_manipulator_$saveRdata(data = ensemble_info, file = "ensemble_info.Rdata")
-    # save RData of experiment
+    # gather RData of experiment
     experiment_info <- gatherExperimentInfo(classifiers = stored_classifiers, experts,  performance = performance,
                                             roc_pred = roc_pred, ensemble_expert = ensemble_expert,
                                             expert_tasks = expert_tasks,
@@ -334,7 +347,7 @@ Server$methods(
       experiment_info[[paste("algorithm_", i, sep = "")]] <- list(preprocess = preprocess)
     }
     classifier      <- GenericClassifier$new()
-    included_models <- classifier$getModels(project_dir = directories_$Project)
+    included_models <- classifier$getModels(project_dir = directories_$Project, current_fold = "total")
     for(i in 1:length(included_models)) {
       model_info       <- list()
       model            <- included_models[[i]]

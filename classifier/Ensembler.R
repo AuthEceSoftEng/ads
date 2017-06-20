@@ -60,7 +60,7 @@ Ensembler$methods(
   #' @param project_dir directory of current project
   #' 
   #' @return names of files containing modes included in ensemble
-  ensemble = function(classifier, test_dataset, performance_metric, project_dir,  ...){
+  ensemble = function(classifier, test_dataset, performance_metric, project_dir, current_fold,  ...){
     'Generates an ensemble of classification models'
     # keep information necessary for rest of Ensembler's work
     performance_metric_ <<- performance_metric
@@ -72,8 +72,8 @@ Ensembler$methods(
     number_instances    <- nrow(test_dataset_)
     probabilities_      <<- data.frame( Negative = rep(0, number_instances), Positive =rep(0,number_instances), stringsAsFactors = FALSE)
     # initialize ensemble with best-performing models
-    initializeEnsemble(project_dir = project_dir)
-    total_models <- classifier_$getModels(project_dir = project_dir) 
+    initializeEnsemble(project_dir = project_dir, current_fold)
+    total_models <- classifier_$getModels(project_dir = project_dir, current_fold) 
     # find size of bootstrap sample
     size_of_sample  <- ceiling(p_ * length(total_models))
     evolution_ <<- c(0)
@@ -110,9 +110,9 @@ Ensembler$methods(
   #' @param project_dir directory of current project
   #' 
   #' @return names of files containing saved models
-  initializeEnsemble = function(project_dir, ...){
+  initializeEnsemble = function(project_dir, current_fold, ...){
     'Initializes the ensemble with N best ranking models'
-    N             <- floor(perc_initial_ * classifier_$getNumModels(project_dir = project_dir))
+    N             <- floor(perc_initial_ * classifier_$getNumModels(project_dir = project_dir, current_fold))
     if(N > M_) { # in case initial size exceeds ensemble size
       N <- M_
     }
@@ -120,12 +120,12 @@ Ensembler$methods(
     init_models <- list()
     if(N!=0) {
       # get all models
-      models        <- classifier_$getModels(project_dir = project_dir)
+      models        <- classifier_$getModels(project_dir = project_dir, current_fold)
       # get all models' contributions
       contributions <- evaluateModelContribution(models_to_eval = models)
       # pick N best models
       initList     <- order(contributions, decreasing = TRUE)[1:N]
-      init_models  <- classifier_$getModels(project_dir = project_dir)
+      init_models  <- classifier_$getModels(project_dir = project_dir, current_fold)
       init_models  <- init_models[initList]
       # update ensemble with N best models
       for(i in init_models) {
@@ -203,10 +203,10 @@ Ensembler$methods(
   #' @param project_dir directory of current project
   #' 
   #' @return  a list of predictions
-  getEnsemblePredictions = function(datasets, type = "prob", project_dir, ...) {
+  getEnsemblePredictions = function(datasets, type = "prob", project_dir, current_fold,...) {
     'Returns  predictions for each model of list.'
     # get total models
-    models <- classifier_$getModels(project_dir = project_dir)
+    models <- classifier_$getModels(project_dir = project_dir, current_fold)
     # get predicted probabilities
     sum_negative            <- rep(0,nrow(datasets[[1]]))
     sum_positive            <- rep(0,nrow(datasets[[1]]))
@@ -256,8 +256,8 @@ Ensembler$methods(
     number_instances    <- nrow(test_dataset_)
     probabilities_      <<- data.frame( Negative = rep(0, number_instances), Positive =rep(0,number_instances), stringsAsFactors = FALSE)
     # initialize ensemble with best-performing models
-    perc_initial_  <<- 1/(classifier_$getNumModels(project_dir = project_dir))
-    best_models <- initializeEnsemble(project_dir = project_dir)
+    perc_initial_  <<- 1/(classifier_$getNumModels(project_dir = project_dir, current_fold))
+    best_models <- initializeEnsemble(project_dir = project_dir, current_fold)
     return(best_models[[1]])
   },
   #' Return performance of ensemble

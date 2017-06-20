@@ -49,7 +49,8 @@ InputParser$methods(
                             testing_technique = options$testing_technique,
                             performance = options$performance,
                             testing_technique_ratio = options$testing_technique_ratio,
-                            benchmark_file = options$benchmark_file
+                            benchmark_file = options$benchmark_file,
+                            cores = options$cores
                             )
     server_$setExperimentTask(experiment_task = experiment_task)
     if(options$train) {
