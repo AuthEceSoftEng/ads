@@ -77,6 +77,9 @@ Ensembler$methods(
     # find size of bootstrap sample
     size_of_sample  <- ceiling(p_ * length(total_models))
     evolution_ <<- c(0)
+    p_inclusion <- size_of_sample/length(total_models)
+    info_$parameters <<- list( initial_ensemble_size = length(included_models_), probability_of_inclusion = p_inclusion ,
+                               size = 0)
     # begin bootstrap ensemble updates
     for (i in seq(1,(M_-length(included_models_)))) {
       # get bootstrap sample of total models
@@ -91,9 +94,9 @@ Ensembler$methods(
       updateEnsemble(model = new_model)
     }
     # update info of ensemble
-    info_$parameters <<- list( initial_ensemble_size = M_, probability_of_inclusion = p_, size = length(included_models_))
-    info_$tuning     <<- list(size = nrow(test_dataset))
-    info_$evolution  <<- evolution_
+    info_$parameters$size <<- length(included_models_)
+    info_$tuning          <<- list(size = nrow(test_dataset))
+    info_$evolution       <<- evolution_
     return(included_models_)
   },
   #' Initialize ensemble

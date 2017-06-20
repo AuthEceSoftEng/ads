@@ -86,7 +86,7 @@ kable(hyper_results, caption = "Results of hyperparameters prediction using meta
 ## Ensemble
 The final ensemble describes the optimal model produced by this experiment. In this section technical characteristics of the ensemble are provided, along with a visualization of its internal workings.
 
-The ensemble was formed using the technique of forward model selection from large libraries of models. The number of models included are `r data$ensemble$parameters$size`, the initial size of the ensemble was `r data$ensemble$parameters$initial_ensemble_size`, the probability of inclusion for each bootstrap sample was `r data$ensemle$parameters$probability_of_inclusion`. Regarding the  technique used to tune the ensemble hold-out analysis was performed using 10% of the tuning dataset, which resulted in `r data$ensemble$tuning$size` instances for testing. 
+The ensemble was formed using the technique of forward model selection from large libraries of models. The number of models included are `r data$ensemble$parameters$size`, the initial size of the ensemble was `r data$ensemble$parameters$initial_ensemble_size`, the probability of inclusion for each bootstrap sample was `r data$ensemble$parameters$probability_of_inclusion`. Regarding the  technique used to tune the ensemble hold-out analysis was performed using 10% of the tuning dataset, which resulted in `r data$ensemble$tuning$size` instances for testing. 
 
 ```{r print_ensemble_evolution, fig.cap= "**Figure 2** *Evolution of ensemble: the performance of the ensemble after each insertion of a model.*"}
  evolution_ensemble <- data$ensemble$evolution

@@ -81,7 +81,6 @@ DataPrepare$methods(
         }
       }
     }
-    str(converted_dataset$Class)
     converted_dataset$Class  <- factor(converted_dataset$Class, levels = levels(converted_dataset$Class), labels = c("Negative","Positive"))
     return(converted_dataset)
   },
