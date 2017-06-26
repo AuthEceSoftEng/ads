@@ -424,7 +424,6 @@ Server$methods(
   predictDataset = function(dataset_name, project_name, workspace_dir, ...) {
     'Regulates the process of comparing diffenent algorithms'
     # check if project exists and is completed
-    project_name         <- paste("project", project_name, sep = "_")
     experiment_info_file <- file.path(workspace_dir, project_name, "experiment_info.Rdata")
     if(!file.exists(experiment_info_file)) {
       cat("ERROR: project does not exist or is not completed.")
@@ -446,7 +445,8 @@ Server$methods(
       # get predictions of ensemble
       ensembler               <- Ensembler$new()
       predictions             <- ensembler$getEnsemblePredictions(datasets = datasets, type = "raw",
-                                                                  project_dir = file.path(workspace_dir,project_name))
+                                                                  project_dir = file.path(workspace_dir,project_name),
+                                                                  current_fold = "total")
       # save predictions file
       write.csv(as.data.frame(predictions), file = file.path(workspace_dir, project_name, "predictions.csv"),
                 row.names = FALSE)
