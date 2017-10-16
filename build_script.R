@@ -5,9 +5,33 @@
 #' Install and load missing  packages
 library_path <- "lib"
 .libPaths(c( .libPaths(),library_path))
-dir.create(library_path,showWarnings = FALSE)
+dir.create(library_path, showWarnings = FALSE)
 repos_path <- "http://cran.rstudio.com/"
 
+if(!require(doParallel))
+{
+  print("You are missing the package 'doParallel', we will now try to install it...")
+  install.packages("doParallel", repos = repos_path, lib = library_path)
+  library(doParallel)
+}
+if(!require(foreach))
+{
+  print("You are missing the package 'foreach', we will now try to install it...")
+  install.packages("foreach", repos = repos_path, lib = library_path)
+  library(foreach)
+}
+if(!require(PMCMR))
+{
+  print("You are missing the package 'PMCMR', we will now try to install it...")
+  install.packages("PMCMR", repos = repos_path, lib = library_path)
+  library(PMCMR)
+}
+if(!require(reshape2))
+{
+  print("You are missing the package 'reshape2', we will now try to install it...")
+  install.packages("reshape2", repos = repos_path, lib = library_path)
+  library(reshape2)
+}
 if(!require(nnet))
 {
   print("You are missing the package 'nnet', we will now try to install it...")
@@ -104,6 +128,12 @@ if(!require(MASS))
   install.packages("MASS", repos = repos_path, lib = library_path)
   library(MASS)
 }
+if(!require(tikzDevice))
+{
+  print("You are missing the package 'tikzDevice', we will now try to install it...")
+  install.packages("tikzDevice", repos = repos_path, lib = library_path)
+  library(tikzDevice)
+}
 if(!require(coin))
 {
   print("You are missing the package 'coin', we will now try to install it...")
@@ -140,7 +170,18 @@ if(!require(kernlab))
   install.packages("kernlab", repos = repos_path, lib = library_path)
   library(kernlab)
 }
-
+if(!require(knitr))
+{
+  print("You are missing the package 'knitr', we will now try to install it...")
+  install.packages("knitr", repos = repos_path, lib = library_path)
+  library(knitr)
+}
+if(!require(markdown))
+{
+  print("You are missing the package 'markdown', we will now try to install it...")
+  install.packages("markdown", repos = repos_path, lib = library_path)
+  library(markdown)
+}
 # converts 'train' class of caret from S3 to S4
 setOldClass("train")
 

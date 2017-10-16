@@ -1,0 +1,114 @@
+---
+title: "AutoML Report"
+author: "Eleni Nisioti"
+date: "May 13, 2017"
+output:
+  html_document:
+    fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( echo = FALSE,warning= FALSE, message= FALSE)
+load("experiment_info.Rdata")
+install_dir <- data$install_dir
+knitr::opts_knit$set(root.dir = install_dir)
+```
+
+## Description
+This is an automatic report generated for the experiment performed on dataset `r data$dataset_name`. The purpose of this document is to provide information about the pipeline of the experiment and describe the mobilized techniques.
+
+## Dataset description
+In this section the dataset is briefly characterized through its features. We provide the perception  of our system and place the experiment's dataset in our current cosmos in order to test if our system is adequately trained for it.
+
+The dataset exhibits `r data$data_prepare$number_of_features` features, of which `r length(data$data_prepare$factor_attributes)` were handled as categorical, of which `r length(data$data_prepare$ordered_attributes)` are ordered.
+
+The anticipation metric is `r data$anticipation_metric$value`, the dataset is therefore `r if(!data$anticipation_metric$outlier) "not"` an outlier. The following figure shows the position of current dataset in cosmos of datasets.
+
+```{r print_cosmos, fig.cap= "**Figure 1** *Position of current dataset in Cosmos, a two-dimensional visualization of our current datasets. This visualization was produced by extracting the meta-features of our training datasets, applying PCA to use the first and second principal components as axis and calculating the average mean distance of each dataset from its 9-nearest neighbors. The colours of the plot correspond to this distance. Current dataset is displayed using a filled black circle.*"}
+source("build_script.R")
+feature_visualizer <- FeatureVisualizer$new()
+feature_visualizer$visualizeCosmos(workspace_dir = file.path(install_dir, "workspace") , meta_instance = data$metafeatures)
+```
+
+## Preprocessing
+This section describes the preprocessing steps that were applied to the experiment's dataset. 
+
+### K-nearest neighbor
+Preprocessing included:
+
+1. compression. The method that was used was `r if("PCA" %in% names(data$algorithm_1$preprocess$data_compression)){ paste("PCA with",  data$algorithm_1$preprocess$data_compression$PCA$pertained_variance, "pertained variance that resulted in", data$algorithm_1$preprocess$data_compression$PCA$number_of_features, "principal components",sep=" ")}` 
+2. normalization. The method that was used was `r if("zscore_info" %in% names(data$algorithm_1$preprocess$normalization)){ "zscore"} else if ("minmax_info"  %in% names(data$algorithm_1$preprocess$normalization)) {"minmax"}`.
+3.  removal of inappropriate values, where unknown and infinite values are included. `r data$algorithm_1$preprocess$removing_inappropriate$NAs$number` unknown values were  `r if("replace" == data$algorithm_1$preprocess$removing_inappropriate$NAs$technique$act) {paste("replaced with", data$algorithm_1$preprocess$removing_inappropriate$NAs$technique$value,  sep = " ")} else {"removed"}` and 
+`r data$algorithm_1$preprocess$removing_inappropriate$Infinites$number` infinite values were  `r if("replace" == data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$act) {paste("replaced with", data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$value,  sep = " ")} else {"removed"}`.
+
+### Classification tree
+Preprocessing included:
+
+1. compression. The method that was used was `r if("PCA" %in% names(data$algorithm_2$preprocess$data_compression)){ paste("PCA with",  data$algorithm_2$preprocess$data_compression$PCA$pertained_variance, "pertained variance that resulted in", data$algorithm_2$preprocess$data_compression$PCA$number_of_features, "principal components",sep=" ")}` 
+2. normalization. The method that was used was `r if("zscore_info" %in% names(data$algorithm_2$preprocess$normalization)){ "zscore"} else if ("minmax_info"  %in% names(data$algorithm_2$preprocess$normalization)) {"minmax"}`.
+3.  removal of inappropriate values, where unknown and infinite values are included. `r data$algorithm_2$removing_inappropriate$NAs$number` unknown values were  `r if("replace" == data$algorithm_2$preprocess$removing_inappropriate$NAs$technique$act) {paste("replaced with", data$algorithm_2$preprocess$removing_inappropriate$NAs$technique$value,  sep = " ")} else {"removed"}` and 
+`r data$algorithm_1$preprocess$removing_inappropriate$Infinites$number` infinite values were  `r if("replace" == data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$act) {paste("replaced with", data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$value,  sep = " ")} else {"removed"}`.
+
+### Artificial Neural Network
+Preprocessing included:
+
+1. compression. The method that was used was `r if("PCA" %in% names(data$algorithm_3$preprocess$data_compression)){ paste("PCA with",  data$algorithm_3$preprocess$data_compression$PCA$pertained_variance, "pertained variance that resulted in", data$algorithm_3$preprocess$data_compression$PCA$number_of_features, "principal components",sep=" ")}` 
+2. normalization. The method that was used was `r if("zscore_info" %in% names(data$algorithm_3$preprocess$normalization)){ "zscore"} else if ("minmax_info"  %in% names(data$algorithm_3$preprocess$normalization)) {"minmax"}`.
+3.  removal of inappropriate values, where unknown and infinite values are included. `r data$algorithm_3$removing_inappropriate$NAs$number` unknown values were  `r if("replace" == data$algorithm_3$preprocess$removing_inappropriate$NAs$technique$act) {paste("replaced with", data$algorithm_3$preprocess$removing_inappropriate$NAs$technique$value,  sep = " ")} else {"removed"}` and 
+`r data$algorithm_1$preprocess$removing_inappropriate$Infinites$number` infinite values were  `r if("replace" == data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$act) {paste("replaced with", data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$value,  sep = " ")} else {"removed"}`.
+
+### Support Vector Machine
+Preprocessing included:
+
+1. compression. The method that was used was `r if("PCA" %in% names(data$algorithm_4$preprocess$data_compression)){ paste("PCA with",  data$algorithm_4$preprocess$data_compression$PCA$pertained_variance, "pertained variance that resulted in", data$algorithm_4$preprocess$data_compression$PCA$number_of_features, "principal components",sep=" ")}` 
+2. normalization. The method that was used was `r if("zscore_info" %in% names(data$algorithm_4$preprocess$normalization)){ "zscore"} else if ("minmax_info"  %in% names(data$algorithm_4$preprocess$normalization)) {"minmax"}`.
+3.  removal of inappropriate values, where unknown and infinite values are included. `r data$algorithm_4$removing_inappropriate$NAs$number` unknown values were  `r if("replace" == data$algorithm_4$preprocess$removing_inappropriate$NAs$technique$act) {paste("replaced with", data$algorithm_4$preprocess$removing_inappropriate$NAs$technique$value,  sep = " ")} else {"removed"}` and 
+`r data$algorithm_1$preprocess$removing_inappropriate$Infinites$number` infinite values were  `r if("replace" == data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$act) {paste("replaced with", data$algorithm_1$preprocess$removing_inappropriate$Infinites$technique$value,  sep = " ")} else {"removed"}`.
+
+ 
+## Machine learning algorithms
+This section describes the machine learning algorithms used by our experiment. They all correspond to methods available by caret.
+
+1. knn with hyperparameter k.
+2. rpart with hyperparameter cp.
+3. ann with hyperparameters size and decay.
+4. svmRadial with hyperparameters sigma and C.
+
+### Hyperparameters meta-learning
+This section describes the results of applying meta-learning to predict the optimal hyperparameters for each model. The following table contains the description of the hyperparameter prediction, which led to the construction of a library of `r data$hyperparameter_info$size` models.
+
+```{r print_hyperparameters_table, comment=NA, results = 'asis'}
+hyper_results <- data$hyperparameter_info$results
+library(knitr)
+kable(hyper_results, caption = "Results of hyperparameters prediction using meta-learning ")
+```
+
+## Ensemble
+The final ensemble describes the optimal model produced by this experiment. In this section technical characteristics of the ensemble are provided, along with a visualization of its internal workings.
+
+The ensemble was formed using the technique of forward model selection from large libraries of models. The number of models included are `r data$ensemble$parameters$size`, the initial size of the ensemble was `r data$ensemble$parameters$initial_ensemble_size`, the probability of inclusion for each bootstrap sample was `r data$ensemle$parameters$probability_of_inclusion`. Regarding the  technique used to tune the ensemble hold-out analysis was performed using 10% of the tuning dataset, which resulted in `r data$ensemble$tuning$size` instances for testing. 
+
+```{r print_ensemble_evolution, fig.cap= "**Figure 2** *Evolution of ensemble: the performance of the ensemble after each insertion of a model.*"}
+ evolution_ensemble <- data$ensemble$evolution
+ evolution <- data.frame(Iterations = seq(1,length(evolution_ensemble)), Performance = evolution_ensemble)
+ ggplot(data=evolution, aes(x=Iterations, y=Performance, group=1)) +
+   geom_line() +xlab("Iteration") + ylab("Performance") +
+   ggtitle("Evolution of ensemble") + 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+```
+
+## Evaluation
+This section serves as the evaluation of the ensemble produced by our experiment. The evaluation metric used was `r names(data$testing$model_validation$metrics)` with value `r data$testing$model_validation$metrics[[1]]`. Testing was performed using the technique of `r paste(data$testing$model_validation$technique$name, "with ratio", data$testing$model_validation$technique$ratio, sep =" ")`.
+
+
+```{r print_folds, fig.cap= "**Figure 3** *Performance of final ensemble for each testing fold.*"}
+ if(data$testing$model_validation$technique$name != "holdout") {
+  barplot(unlist(data$ensemble$performance), xlab = "fold", ylab = "Performance", main = "Performance of ensemble across folds" )
+   }
+```
+
+```{r print_roc, fig.cap= "**Figure 4** *Receiver operating curve of final ensemble.*"}
+ pred        <- data$ensemble$roc_pred[[1]]
+ perf        <- performance(pred, measure = "tpr", x.measure = "fpr")
+ plot(perf, main = "ROC curve of final ensemble")
+```
